@@ -1,0 +1,46 @@
+# Comandos Git para executar após instalar o Git
+
+# 1. Inicializar repositório
+git init
+
+# 2. Adicionar todos os arquivos
+git add .
+
+# 3. Fazer o primeiro commit
+git commit -m "Initial commit - PromoVitrine completo"
+
+# 4. Renomear branch para main
+git branch -M main
+
+# 5. Adicionar repositório remoto (SUBSTITUA pela sua URL do GitHub)
+git remote add origin https://github.com/kauanph82-hub/Promovitrine.git
+
+# 6. Fazer push para o GitHub
+git push -u origin main
+
+# ============================================
+# Se der erro de autenticação:
+# ============================================
+# Configure seu nome e email:
+git config --global user.name "Seu Nome"
+git config --global user.email "seu-email@example.com"
+
+# ============================================
+# Se o repositório já existir no GitHub:
+# ============================================
+git push -u origin main --force
+
+# ============================================
+# Para verificar o status:
+# ============================================
+git status
+
+# ============================================
+# Para ver os arquivos que serão commitados:
+# ============================================
+git status
+
+# ============================================
+# Para ver o histórico:
+# ============================================
+git log --oneline
