@@ -49,10 +49,6 @@ export default function App() {
 
           {/* Admin - Nova rota /silva-admin */}
           <Route path="/silva-admin/login" element={<AdminLogin />} />
-          
-          {/* ROTA DE EMERGÊNCIA - REMOVER DEPOIS */}
-          <Route path="/admin-force" element={<AdminDashboard />} />
-          
           <Route path="/silva-admin" element={<PrivateRoute><AdminDashboard /></PrivateRoute>} />
           <Route path="/silva-admin/produto/novo" element={<PrivateRoute><AdminProductForm /></PrivateRoute>} />
           <Route path="/silva-admin/produto/:id/editar" element={<PrivateRoute><AdminProductForm /></PrivateRoute>} />
