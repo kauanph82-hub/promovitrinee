@@ -122,22 +122,26 @@ export default function Home() {
 
         {/* Resultados header */}
         <div className="flex items-center justify-between mb-4">
-          <p className="text-stone-500 text-sm">
-            {search ? `Resultados para "${search}" · ` : ''}
-            <span className="font-semibold text-stone-800">{total}</span> ofertas
+          <h2 className="text-stone-800 text-xl font-bold">Ofertas</h2>
+          <p className="text-stone-400 text-sm">
+            {search ? `"${search}" · ` : ''}
+            <span className="font-semibold text-stone-600">{total}</span> resultados
           </p>
         </div>
 
         {/* Grid */}
         {loading && products.length === 0 ? (
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3">
-            {Array.from({ length: 12 }).map((_, i) => (
-              <div key={i} className="bg-white rounded-2xl overflow-hidden animate-pulse">
-                <div className="aspect-square bg-stone-200" />
-                <div className="p-3 space-y-2">
-                  <div className="h-3 bg-stone-200 rounded w-1/2" />
-                  <div className="h-3 bg-stone-200 rounded" />
-                  <div className="h-4 bg-stone-200 rounded w-1/3" />
+          <div className="grid grid-flow-row grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
+            {Array.from({ length: 8 }).map((_, i) => (
+              <div key={i} className="bg-white rounded-2xl border border-stone-200 p-4 animate-pulse">
+                <div className="flex gap-4 lg:flex-col">
+                  <div className="size-[100px] lg:size-[180px] rounded-xl bg-stone-200 shrink-0" />
+                  <div className="flex-1 space-y-2 pt-2">
+                    <div className="h-3 bg-stone-200 rounded w-1/3" />
+                    <div className="h-3 bg-stone-200 rounded" />
+                    <div className="h-3 bg-stone-200 rounded w-4/5" />
+                    <div className="h-4 bg-stone-200 rounded w-1/4 mt-2" />
+                  </div>
                 </div>
               </div>
             ))}
@@ -159,7 +163,7 @@ export default function Home() {
           </div>
         ) : (
           <>
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3">
+            <div className="grid grid-flow-row grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
               {products.map(p => (
                 <div key={p.id} onClick={() => setSelected(p)}>
                   <ProductCard product={p} />
