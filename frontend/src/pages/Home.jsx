@@ -117,8 +117,8 @@ export default function Home() {
           {/* Linha 1: logo + busca + ações */}
           <div className="flex items-center gap-4 px-4 py-3 max-w-screen-xl mx-auto w-full">
             {/* Logo */}
-            <Link to="/" className="shrink-0 flex items-center gap-1">
-              <span className="text-[#00AAB5] font-bold text-xl tracking-tight">🔥 PromoVitrine</span>
+            <Link to="/" className="shrink-0 flex items-center">
+              <img src="https://i.postimg.cc/HjGC0fv9/gemini-2-5-flash-image-quero-que-vc-troque-o-nome-o-simbulo-por-esse-de-cupom-e-quero-que-vc-troque.png" alt="Logo" className="h-9 w-auto object-contain" />
             </Link>
 
             {/* Busca */}
@@ -191,7 +191,7 @@ export default function Home() {
             </div>
 
             {/* Links de destaque */}
-            <span className="text-sm font-medium text-gray-400 px-3 py-2">PromoVitrine</span>
+            <span className="text-sm font-medium text-gray-400 px-3 py-2"></span>
           </div>
         </div>
 
@@ -201,7 +201,7 @@ export default function Home() {
             <button onClick={() => setMenuOpen(!menuOpen)} className="p-2 rounded-full hover:bg-gray-100">
               <svg className="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16"/></svg>
             </button>
-            <Link to="/"><span className="text-[#00AAB5] font-bold text-lg">🔥 PromoVitrine</span></Link>
+            <Link to="/"><img src="https://i.postimg.cc/HjGC0fv9/gemini-2-5-flash-image-quero-que-vc-troque-o-nome-o-simbulo-por-esse-de-cupom-e-quero-que-vc-troque.png" alt="Logo" className="h-8 w-auto object-contain" /></Link>
           </div>
           <div className="flex items-center gap-2">
             <button onClick={() => setSearchOpen(!searchOpen)} className="p-2 rounded-full hover:bg-gray-100">
@@ -427,7 +427,7 @@ export default function Home() {
 
       {/* Footer */}
       <footer className="border-t-4 border-[#00AAB5] bg-white py-8 text-center text-gray-400 text-sm mt-4">
-        <p className="font-medium text-gray-600">🔥 PromoVitrine · Economize sempre</p>
+        <img src="https://i.postimg.cc/HjGC0fv9/gemini-2-5-flash-image-quero-que-vc-troque-o-nome-o-simbulo-por-esse-de-cupom-e-quero-que-vc-troque.png" alt="Logo" className="h-8 w-auto object-contain mx-auto mb-2" />
         <p className="text-xs mt-1">Os links são de afiliado. Ao comprar, você apoia este site sem custo extra.</p>
       </footer>
 
@@ -448,7 +448,7 @@ export default function Home() {
             <div className="overflow-y-auto flex-1 p-4">
               {wishlist.length === 0 ? (
                 <div className="text-center py-12 text-gray-400">
-                  <img src={HEART_IMG} alt="" className="w-12 h-12 rounded-full object-cover mx-auto mb-3 opacity-30" />
+                  <img src={} alt="" className="w-12 h-12 rounded-full object-cover mx-auto mb-3 opacity-30" />
                   <p className="font-medium">Sua lista está vazia</p>
                   <p className="text-sm mt-1">Clique no ❤️ nos produtos para salvar</p>
                 </div>
@@ -502,8 +502,8 @@ export default function Home() {
 
       {/* ── NAVBAR MOBILE FIXA (estilo Promobit) ── */}
       <nav className="fixed bottom-0 left-0 z-20 h-20 w-full flex items-start justify-between border-t border-gray-200 bg-white shadow-[0_-2px_4px_0_rgba(19,19,19,0.1)] lg:hidden px-1">
-        <Link to="/" className="flex h-full flex-1 flex-col items-center justify-start px-0 pt-4 text-center text-[#00AAB5]">
-          <span className="text-xl">🔥</span>
+        <Link to="/" className="flex h-full flex-1 flex-col items-center justify-start px-0 pt-3 text-center text-[#00AAB5]">
+          <img src="https://i.postimg.cc/HjGC0fv9/gemini-2-5-flash-image-quero-que-vc-troque-o-nome-o-simbulo-por-esse-de-cupom-e-quero-que-vc-troque.png" alt="Logo" className="h-6 w-auto object-contain" />
           <p className="text-xs font-bold mt-1">Ofertas</p>
         </Link>
         <button onClick={() => setSearchOpen(true)} className="flex h-full flex-1 flex-col items-center justify-start px-0 pt-4 text-center text-gray-400">

@@ -28,8 +28,7 @@ export default function AdminLogin() {
     <div className="min-h-screen bg-gradient-to-br from-stone-900 to-stone-800 flex items-center justify-center px-4">
       <div className="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-sm animate-slide-up">
         <div className="text-center mb-8">
-          <div className="text-4xl mb-3">🔥</div>
-          <h1 className="font-display font-bold text-2xl text-stone-900">PromoVitrine</h1>
+          <img src="https://i.postimg.cc/HjGC0fv9/gemini-2-5-flash-image-quero-que-vc-troque-o-nome-o-simbulo-por-esse-de-cupom-e-quero-que-vc-troque.png" alt="Logo" className="h-16 w-auto object-contain mx-auto mb-3" />
           <p className="text-stone-500 text-sm mt-1">Painel Administrativo</p>
         </div>
 
