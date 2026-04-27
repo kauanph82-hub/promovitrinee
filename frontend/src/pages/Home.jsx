@@ -204,8 +204,12 @@ export default function Home() {
 
       {/* ── BANNER CARROSSEL ── */}
       <div className="max-w-screen-xl mx-auto px-4 mt-4">
-        <div className="w-full h-[120px] md:h-[200px] lg:h-[280px] bg-gray-200 rounded-2xl flex items-center justify-center text-gray-400 text-sm border border-gray-300">
-          Banner — aguardando link
+        <div className="w-full h-[120px] md:h-[200px] lg:h-[280px] rounded-2xl overflow-hidden">
+          <img
+            src="https://i.postimg.cc/TPHT1gPq/page-2-level-4-1527178632.jpg"
+            alt="Banner PromoVitrine"
+            className="w-full h-full object-cover"
+          />
         </div>
       </div>
 
@@ -348,6 +352,24 @@ export default function Home() {
                               <span className="text-sm text-gray-400 italic">Ver preço no site</span>
                             )}
                           </div>
+                          {/* Estrelas e vendas */}
+                          {(p.rating > 0 || p.sales_count > 0) && (
+                            <div className="flex items-center gap-2 mt-1.5 flex-wrap">
+                              {p.rating > 0 && (
+                                <div className="flex items-center gap-0.5">
+                                  {Array.from({ length: 5 }).map((_, i) => (
+                                    <span key={i} className={`text-sm ${i < Math.floor(p.rating) ? 'text-yellow-400' : i < p.rating ? 'text-yellow-300' : 'text-gray-200'}`}>★</span>
+                                  ))}
+                                  <span className="text-xs text-gray-400 ml-1">{p.rating}</span>
+                                </div>
+                              )}
+                              {p.sales_count > 0 && (
+                                <span className="text-xs text-gray-400">
+                                  {p.sales_count >= 1000 ? `${(p.sales_count / 1000).toFixed(1)}k` : p.sales_count}+ vendas
+                                </span>
+                              )}
+                            </div>
+                          )}
                         </div>
                       </div>
                     </div>

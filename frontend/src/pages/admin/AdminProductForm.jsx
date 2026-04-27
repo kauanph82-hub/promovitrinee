@@ -20,8 +20,9 @@ export default function AdminProductForm() {
     title: '', description: '', original_price: '', promo_price: '',
     affiliate_link: '', platform: 'shopee', category_id: '',
     tags: '', featured: false, active: true,
-    images: [], // array de URLs string
-    coupons: [], // array de objetos
+    rating: '', sales_count: '',
+    images: [],
+    coupons: [],
   });
 
   useEffect(() => {
@@ -42,6 +43,8 @@ export default function AdminProductForm() {
             tags: (data.tags || []).join(', '),
             featured: data.featured || false,
             active: data.active !== false,
+            rating: data.rating || '',
+            sales_count: data.sales_count || '',
             images: (data.images || []).map(i => i.url),
             coupons: (data.coupons || []).map(c => ({
               code: c.code || '',
@@ -116,6 +119,8 @@ export default function AdminProductForm() {
       ...form,
       original_price: form.original_price ? parseFloat(form.original_price) : null,
       promo_price: form.promo_price ? parseFloat(form.promo_price) : null,
+      rating: form.rating !== '' ? parseFloat(form.rating) : null,
+      sales_count: form.sales_count !== '' ? parseInt(form.sales_count) : null,
       tags: form.tags ? form.tags.split(',').map(t => t.trim()).filter(Boolean) : [],
     };
 
@@ -182,8 +187,36 @@ export default function AdminProductForm() {
             </div>
           </div>
 
+          {/* Avaliação e Vendas — OPCIONAIS */}
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-stone-700 mb-1.5">
+                ⭐ Avaliação <span className="text-stone-400 font-normal">(opcional, 0–5)</span>
+              </label>
+              <input
+                type="number" step="0.1" min="0" max="5"
+                className="input"
+                value={form.rating}
+                onChange={e => set('rating', e.target.value)}
+                placeholder="Ex: 4.5"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-stone-700 mb-1.5">
+                🛒 Vendas <span className="text-stone-400 font-normal">(opcional)</span>
+              </label>
+              <input
+                type="number" min="0"
+                className="input"
+                value={form.sales_count}
+                onChange={e => set('sales_count', e.target.value)}
+                placeholder="Ex: 1200"
+              />
+            </div>
+          </div>
+
           <div>
-            <label className="block text-sm font-medium text-stone-700 mb-1.5">Link de afiliado *</label>
+            <label className="block text-sm font-medium text-stone-700 mb-1.5">Link de Promoção! *</label>
             <input type="url" className="input" value={form.affiliate_link}
               onChange={e => set('affiliate_link', e.target.value)}
               placeholder="https://..." required />
