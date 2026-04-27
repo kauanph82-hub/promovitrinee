@@ -1,5 +1,5 @@
 export const PLATFORMS = {
-  shopee:        { label: 'Shopee',        color: 'bg-orange-100 text-orange-700', emoji: '🛍️' },
+  shopee:        { label: 'Shopee',        color: 'bg-orange-100 text-orange-700', emoji: '🛍️', img: 'https://i.postimg.cc/138ZnL1n/br-50009109-2e3301fdd34755e5e0f48c608ba6fc16.jpg' },
   mercadolivre:  { label: 'Mercado Livre', color: 'bg-yellow-100 text-yellow-700', emoji: '🛒' },
   amazon:        { label: 'Amazon',        color: 'bg-amber-100  text-amber-700',  emoji: '📦' },
   aliexpress:    { label: 'AliExpress',    color: 'bg-red-100    text-red-700',    emoji: '✈️' },

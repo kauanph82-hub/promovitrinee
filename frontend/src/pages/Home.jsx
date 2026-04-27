@@ -191,7 +191,7 @@ export default function Home() {
           <p className="text-stone-800 text-lg font-bold mb-4">Lojas Parceiras</p>
           <div className="flex gap-4 overflow-x-auto pb-1 scrollbar-none">
             {[
-              { name: 'Shopee',         key: 'shopee',        img: 'https://i.postimg.cc/c1Mb4hhF/download-(3).jpg' },
+              { name: 'Shopee',         key: 'shopee',        img: 'https://i.postimg.cc/138ZnL1n/br-50009109-2e3301fdd34755e5e0f48c608ba6fc16.jpg' },
               { name: 'Amazon',         key: 'amazon',        img: 'https://i.postimg.cc/Qtg0CNQH/Minecraft-(English-Arabic-Box)-Play-Station-4-Edizione-Regno-Unito.jpg' },
               { name: 'Mercado Livre',  key: 'mercadolivre',  img: 'https://i.postimg.cc/0j2dNY2y/Escola-de-E-commerce-Aprenda-a-viver-de-vendas-online.jpg' },
               { name: 'AliExpress',     key: 'aliexpress',    img: 'https://i.postimg.cc/J405V52G/download-(4).jpg' },
