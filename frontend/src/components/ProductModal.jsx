@@ -4,6 +4,22 @@ import { getPlatform, formatPrice, calcDiscount } from '../utils/platform';
 export default function ProductModal({ product, onClose }) {
   const [activeImg, setActiveImg] = useState(0);
   const [copied, setCopied] = useState(null);
+  const [wished, setWished] = useState(() => {
+    try {
+      const list = JSON.parse(localStorage.getItem('wishlist') || '[]');
+      return list.some(p => p.id === product.id);
+    } catch { return false; }
+  });
+
+  function toggleWish() {
+    try {
+      const list = JSON.parse(localStorage.getItem('wishlist') || '[]');
+      const exists = list.some(p => p.id === product.id);
+      const next = exists ? list.filter(p => p.id !== product.id) : [...list, product];
+      localStorage.setItem('wishlist', JSON.stringify(next));
+      setWished(!exists);
+    } catch {}
+  }
 
   const platform = getPlatform(product.platform);
   const discount = calcDiscount(product.original_price, product.promo_price);
@@ -37,9 +53,18 @@ export default function ProductModal({ product, onClose }) {
           <span className={`badge-platform ${platform.color}`}>
             {platform.emoji} {platform.label}
           </span>
-          <button onClick={onClose} className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-stone-100 text-stone-500 text-lg transition-colors">
-            ✕
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={toggleWish}
+              className={`w-8 h-8 flex items-center justify-center rounded-full transition-colors text-lg ${wished ? 'bg-red-50 text-red-500' : 'hover:bg-stone-100 text-stone-400'}`}
+              title={wished ? 'Remover dos desejos' : 'Adicionar aos desejos'}
+            >
+              {wished ? '❤️' : '🤍'}
+            </button>
+            <button onClick={onClose} className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-stone-100 text-stone-500 text-lg transition-colors">
+              ✕
+            </button>
+          </div>
         </div>
 
         {/* Conteúdo scrollável */}

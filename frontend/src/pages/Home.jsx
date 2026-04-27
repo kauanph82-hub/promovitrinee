@@ -440,7 +440,7 @@ export default function Home() {
           <div className="bg-white rounded-2xl w-full max-w-lg max-h-[80vh] overflow-hidden flex flex-col" onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between p-4 border-b border-gray-100">
               <div className="flex items-center gap-2">
-                <img src={HEART_IMG} alt="Desejos" className="w-6 h-6 rounded-full object-cover" />
+                <span className="text-xl">❤️</span>
                 <h2 className="font-bold text-gray-800">Lista de Desejos ({wishlist.length})</h2>
               </div>
               <button onClick={() => setShowWishlist(false)} className="text-gray-400 hover:text-gray-600 text-xl">✕</button>
@@ -458,7 +458,8 @@ export default function Home() {
                     const plat = getPlatform(p.platform);
                     const img = p.images?.[0]?.url;
                     return (
-                      <div key={p.id} className="flex items-center gap-3 p-3 border border-gray-100 rounded-xl hover:bg-gray-50">
+                      <div key={p.id} className="flex items-center gap-3 p-3 border border-gray-100 rounded-xl hover:bg-gray-50 cursor-pointer"
+                        onClick={() => { setSelected(p); setShowWishlist(false); }}>
                         {img
                           ? <img src={img} alt={p.title} className="w-14 h-14 rounded-lg object-cover shrink-0" />
                           : <div className="w-14 h-14 rounded-lg bg-gray-100 flex items-center justify-center text-xl shrink-0">🛍️</div>
@@ -470,7 +471,7 @@ export default function Home() {
                             {p.promo_price > 0 ? formatPrice(p.promo_price) : p.original_price > 0 ? formatPrice(p.original_price) : 'Ver preço'}
                           </p>
                         </div>
-                        <button onClick={() => toggleWishlist(p)} className="shrink-0 p-2 text-red-400 hover:text-red-600">✕</button>
+                        <button onClick={e => { e.stopPropagation(); toggleWishlist(p); }} className="shrink-0 p-2 text-red-400 hover:text-red-600">✕</button>
                       </div>
                     );
                   })}
