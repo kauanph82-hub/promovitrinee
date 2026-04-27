@@ -100,11 +100,11 @@ export default function Home() {
     <div style={{ fontFamily: "'Rubik', sans-serif" }} className="min-h-screen bg-[#f4f4f4] pb-20 lg:pb-0">
 
       {/* ── BARRA DE ANÚNCIO TOPO ── */}
-      <div className="w-full overflow-hidden" style={{ height: '64px' }}>
+      <div className="w-full overflow-hidden">
         <img
           src="https://i.postimg.cc/nc1dGyWX/Black-Friday-Mercado-Livre-Cupons-e-ofertas-(1).jpg"
           alt="Banner de anúncio"
-          className="w-full h-full object-cover"
+          className="w-full h-auto block"
         />
       </div>
 
@@ -235,11 +235,11 @@ export default function Home() {
 
       {/* ── BANNER PRINCIPAL ── */}
       <div className="max-w-screen-xl mx-auto px-4 mt-4">
-        <div className="w-full overflow-hidden rounded-2xl" style={{ height: '280px' }}>
+        <div className="w-full overflow-hidden rounded-2xl">
           <img
             src="https://i.postimg.cc/TPHT1gPq/page-2-level-4-1527178632.jpg"
             alt="Banner PromoVitrine"
-            className="w-full h-full object-cover"
+            className="w-full h-auto block"
           />
         </div>
       </div>
