@@ -218,7 +218,10 @@ export default function Home() {
                 const img = p.images?.[0]?.url;
                 return (
                   <div key={p.id} onClick={() => setSelected(p)} className="shrink-0 w-[200px] bg-white border border-stone-200 rounded-2xl p-4 cursor-pointer hover:shadow-md transition-shadow flex flex-col gap-2">
-                    <span className="text-xs text-stone-400 truncate">{plat.emoji} {plat.label}</span>
+                    <span className="text-xs text-stone-400 truncate flex items-center gap-1">
+                      {plat.img ? <img src={plat.img} alt={plat.label} className="w-4 h-4 rounded object-cover inline" /> : plat.emoji}
+                      {plat.label}
+                    </span>
                     <div className="flex justify-center">
                       {img ? <img src={img} alt={p.title} className="w-[120px] h-[120px] object-cover rounded-xl" /> : <div className="w-[120px] h-[120px] bg-stone-100 rounded-xl flex items-center justify-center text-3xl">🛍️</div>}
                     </div>
@@ -246,7 +249,11 @@ export default function Home() {
                 return (
                   <button key={k} onClick={() => setPlatform(prev => prev === k ? '' : k)}
                     className={`flex items-center gap-1 shrink-0 text-xs font-bold px-4 py-2 rounded-full border transition-all ${platform === k ? 'bg-orange-500 border-orange-500 text-white' : 'border-stone-200 text-stone-600 hover:border-stone-300'}`}>
-                    {plat.emoji} {plat.label}
+                    {plat.img
+                      ? <img src={plat.img} alt={plat.label} className="w-4 h-4 rounded object-cover" />
+                      : <span>{plat.emoji}</span>
+                    }
+                    {plat.label}
                   </button>
                 );
               })}
@@ -298,7 +305,8 @@ export default function Home() {
                       <div className="relative flex size-full flex-row gap-4 lg:flex-col">
                         {/* Loja — só desktop */}
                         <div className="hidden lg:flex items-center gap-1 pb-3">
-                          <span className="text-sm text-stone-500 truncate">{plat.emoji} {plat.label}</span>
+                          {plat.img ? <img src={plat.img} alt={plat.label} className="w-4 h-4 rounded object-cover" /> : <span>{plat.emoji}</span>}
+                          <span className="text-sm text-stone-500 truncate">{plat.label}</span>
                         </div>
                         {/* Imagem */}
                         <div className="relative flex justify-center shrink-0">
@@ -312,7 +320,8 @@ export default function Home() {
                         <div className="flex size-full flex-col pb-3 justify-between border-b border-stone-100">
                           {/* Loja — só mobile */}
                           <div className="flex items-center lg:hidden mb-1 gap-1">
-                            <span className="text-xs text-stone-500">{plat.emoji} {plat.label}</span>
+                            {plat.img ? <img src={plat.img} alt={plat.label} className="w-4 h-4 rounded object-cover" /> : <span className="text-xs">{plat.emoji}</span>}
+                            <span className="text-xs text-stone-500">{plat.label}</span>
                           </div>
                           <p className="text-sm text-stone-700 mt-1 line-clamp-2 min-h-10 break-words">{p.title}</p>
                           <div className="flex items-baseline gap-2 flex-wrap mt-2">
@@ -350,7 +359,7 @@ export default function Home() {
       {/* Footer */}
       <footer className="text-center py-8 text-stone-400 text-sm border-t border-stone-100 mt-4">
         <p>🔥 PromoVitrine · Economize sempre</p>
-        <p className="text-xs mt-1">Os links são de afiliado. Ao comprar, você apoia este site sem custo extra.</p>
+        <p className="afiliadotext-xs mt-1">Partiu economizar? BORAA </p>
       </footer>
 
       {/* Modal */}
