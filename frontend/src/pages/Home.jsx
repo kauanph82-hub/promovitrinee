@@ -204,11 +204,12 @@ export default function Home() {
 
       {/* ── BANNER CARROSSEL ── */}
       <div className="max-w-screen-xl mx-auto px-4 mt-4">
-        <div className="w-full h-[120px] md:h-[200px] lg:h-[280px] rounded-2xl overflow-hidden">
+        <div className="w-full rounded-2xl overflow-hidden">
           <img
             src="https://i.postimg.cc/TPHT1gPq/page-2-level-4-1527178632.jpg"
             alt="Banner PromoVitrine"
-            className="w-full h-full object-cover"
+            className="w-full h-auto block object-contain"
+            style={{ maxHeight: '400px', objectFit: 'contain', objectPosition: 'center' }}
           />
         </div>
       </div>
