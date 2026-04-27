@@ -100,22 +100,10 @@ export default function Home() {
 
             {/* Ações direita */}
             <div className="flex items-center gap-1 ml-auto">
-              {[
-                { icon: '📱', label: 'Baixar o app' },
-                { icon: '➕', label: 'Postar oferta', to: '/silva-admin' },
-                { icon: '❤️', label: 'Lista de desejos' },
-                { icon: '🔔', label: 'Notificações' },
-              ].map((btn, i) => (
-                btn.to
-                  ? <Link key={i} to={btn.to} className="flex flex-col items-center gap-1 w-[90px] py-1 hover:bg-gray-50 rounded-lg transition-colors">
-                      <span className="flex items-center justify-center w-10 h-10 rounded-full bg-[#00AAB5] text-white text-lg">{btn.icon}</span>
-                      <span className="text-[10px] text-gray-500 text-center leading-tight">{btn.label}</span>
-                    </Link>
-                  : <button key={i} className="flex flex-col items-center gap-1 w-[90px] py-1 hover:bg-gray-50 rounded-lg transition-colors">
-                      <span className="flex items-center justify-center w-10 h-10 rounded-full bg-[#00AAB5] text-white text-lg">{btn.icon}</span>
-                      <span className="text-[10px] text-gray-500 text-center leading-tight">{btn.label}</span>
-                    </button>
-              ))}
+              <button className="flex flex-col items-center gap-1 w-[90px] py-1 hover:bg-gray-50 rounded-lg transition-colors">
+                <span className="flex items-center justify-center w-10 h-10 rounded-full bg-[#00AAB5] text-white text-lg">🔔</span>
+                <span className="text-[10px] text-gray-500 text-center leading-tight">Notificações</span>
+              </button>
               {/* Avatar admin */}
               <Link to="/silva-admin" className="flex flex-col items-center gap-1 w-[90px] py-1 hover:bg-gray-50 rounded-lg transition-colors">
                 <img src={ADMIN_AVATAR} alt="Admin" className="w-10 h-10 rounded-full object-cover border-2 border-gray-200" />
