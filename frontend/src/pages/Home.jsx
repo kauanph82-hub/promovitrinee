@@ -14,6 +14,7 @@ export default function Home() {
   const [categories, setCategories] = useState([]);
   const [selected, setSelected] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
   const [platform, setPlatform] = useState('');
@@ -35,6 +36,7 @@ export default function Home() {
 
   const loadProducts = useCallback(async (p = 1, append = false) => {
     setLoading(true);
+    setError(false);
     try {
       const params = { page: p, limit: LIMIT };
       if (search)   params.search = search;
@@ -42,7 +44,6 @@ export default function Home() {
 
       const { data } = await api.get('/products', { params });
       
-      // Validação para evitar erros de undefined
       const productsArray = Array.isArray(data?.products) ? data.products : [];
       const totalCount = typeof data?.total === 'number' ? data.total : 0;
       
@@ -51,7 +52,7 @@ export default function Home() {
       setPage(p);
     } catch (err) {
       console.error('Erro ao carregar produtos:', err);
-      // Em caso de erro, define arrays vazios para evitar undefined
+      setError(true);
       if (!append) {
         setProducts([]);
         setTotal(0);
@@ -125,6 +126,15 @@ export default function Home() {
                 </div>
               </div>
             ))}
+          </div>
+        ) : error ? (
+          <div className="text-center py-20 text-stone-400">
+            <div className="text-5xl mb-4">⏳</div>
+            <p className="text-lg font-medium">Servidor acordando...</p>
+            <p className="text-sm mt-1">O servidor pode demorar até 1 minuto para iniciar. Aguarde e recarregue a página.</p>
+            <button onClick={() => loadProducts(1)} className="mt-4 px-6 py-2 bg-brand-500 text-white rounded-full text-sm font-semibold hover:bg-brand-600 transition-colors">
+              Tentar novamente
+            </button>
           </div>
         ) : products.length === 0 ? (
           <div className="text-center py-20 text-stone-400">
