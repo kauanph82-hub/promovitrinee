@@ -306,7 +306,8 @@ export default function Home() {
                         {/* Loja — só desktop */}
                         <div className="hidden lg:flex items-center gap-1 pb-3">
                           {plat.img ? <img src={plat.img} alt={plat.label} className="w-4 h-4 rounded object-cover" /> : <span>{plat.emoji}</span>}
-                          <span className="text-sm text-stone-500 truncate">{plat.label}</span>
+                          <span className="text-sm text-stone-600 font-medium">{plat.label}</span>
+                          {plat.domain && <span className="text-xs text-stone-400">{plat.domain}</span>}
                         </div>
                         {/* Imagem */}
                         <div className="relative flex justify-center shrink-0">
@@ -321,7 +322,8 @@ export default function Home() {
                           {/* Loja — só mobile */}
                           <div className="flex items-center lg:hidden mb-1 gap-1">
                             {plat.img ? <img src={plat.img} alt={plat.label} className="w-4 h-4 rounded object-cover" /> : <span className="text-xs">{plat.emoji}</span>}
-                            <span className="text-xs text-stone-500">{plat.label}</span>
+                            <span className="text-xs text-stone-600 font-medium">{plat.label}</span>
+                            {plat.domain && <span className="text-xs text-stone-400">{plat.domain}</span>}
                           </div>
                           <p className="text-sm text-stone-700 mt-1 line-clamp-2 min-h-10 break-words">{p.title}</p>
                           <div className="flex items-baseline gap-2 flex-wrap mt-2">

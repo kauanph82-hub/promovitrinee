@@ -14,12 +14,10 @@ export default function ProductCard({ product }) {
       <div className="relative flex size-full flex-row gap-4 lg:flex-col">
         {/* Loja - só desktop */}
         <div className="items-center hidden pb-3 lg:flex gap-1">
-          {platform.img
-            ? <img src={platform.img} alt={platform.label} className="w-4 h-4 rounded object-cover" />
-            : <span className="text-sm">{platform.emoji}</span>
-          }
-          <span className="text-sm text-stone-500 truncate">{platform.label}</span>
-          {product.featured && <span className="text-yellow-500 text-xs">⭐</span>}
+          {platform.img ? <img src={platform.img} alt={platform.label} className="w-4 h-4 rounded object-cover" /> : <span className="text-sm">{platform.emoji}</span>}
+          <span className="text-sm text-stone-600 font-medium">{platform.label}</span>
+          {platform.domain && <span className="text-xs text-stone-400">{platform.domain}</span>}
+          {product.featured && <span className="text-yellow-500 text-xs ml-1">⭐</span>}
         </div>
 
         {/* Imagem */}
@@ -48,11 +46,9 @@ export default function ProductCard({ product }) {
         <div className="flex size-full flex-col pb-3 justify-between border-b border-stone-100">
           {/* Loja - só mobile */}
           <div className="flex items-center lg:hidden mb-1 gap-1">
-            {platform.img
-              ? <img src={platform.img} alt={platform.label} className="w-4 h-4 rounded object-cover" />
-              : <span className="text-xs">{platform.emoji}</span>
-            }
-            <span className="text-xs text-stone-500">{platform.label}</span>
+            {platform.img ? <img src={platform.img} alt={platform.label} className="w-4 h-4 rounded object-cover" /> : <span className="text-xs">{platform.emoji}</span>}
+            <span className="text-xs text-stone-600 font-medium">{platform.label}</span>
+            {platform.domain && <span className="text-xs text-stone-400">{platform.domain}</span>}
           </div>
 
           {/* Título */}
