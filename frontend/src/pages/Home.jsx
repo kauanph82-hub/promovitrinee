@@ -72,7 +72,7 @@ export default function Home() {
       <Header categories={categories} />
 
       {/* Lojas Parceiras */}
-      <div className="bg-stone-50 py-4 px-4 border-b border-stone-100">
+      <div className="bg-white py-4 px-4 border-b border-stone-100">
         <p className="text-center text-xs text-stone-400 font-medium mb-3">Lojas Parceiras</p>
         <div className="flex items-center gap-4 overflow-x-auto pb-1 justify-start sm:justify-center">
           {[
