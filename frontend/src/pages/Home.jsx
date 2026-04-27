@@ -360,9 +360,9 @@ export default function Home() {
                           {disc && <div className="absolute top-1 left-1 bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-lg">-{disc}%</div>}
                           <button
                             onClick={e => { e.stopPropagation(); toggleWishlist(p); }}
-                            className="absolute top-1 right-1 w-7 h-7 rounded-full overflow-hidden border-2 border-white shadow-sm opacity-70 hover:opacity-100 transition-opacity"
+                            className="absolute top-1 right-1 w-7 h-7 flex items-center justify-center rounded-full bg-white/80 shadow-sm text-base hover:scale-110 transition-transform"
                           >
-                            <img src={HEART_IMG} alt="Desejo" className={`w-full h-full object-cover ${isWished(p.id) ? 'opacity-100' : 'opacity-40'}`} />
+                            {isWished(p.id) ? '❤️' : '🤍'}
                           </button>
                         </div>
                         {/* Info */}
@@ -470,6 +470,17 @@ export default function Home() {
                           <p className="text-sm font-bold text-gray-800 mt-0.5">
                             {p.promo_price > 0 ? formatPrice(p.promo_price) : p.original_price > 0 ? formatPrice(p.original_price) : 'Ver preço'}
                           </p>
+                          {p.affiliate_link && (
+                            <a
+                              href={p.affiliate_link}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              onClick={e => e.stopPropagation()}
+                              className="inline-block mt-1 text-xs text-[#00AAB5] font-semibold hover:underline"
+                            >
+                              Ver no site →
+                            </a>
+                          )}
                         </div>
                         <button onClick={e => { e.stopPropagation(); toggleWishlist(p); }} className="shrink-0 p-2 text-red-400 hover:text-red-600">✕</button>
                       </div>
