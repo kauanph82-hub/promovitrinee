@@ -19,7 +19,7 @@ export default function Header({ categories = [] }) {
           {/* Logo */}
           <Link to="/" className="flex items-center gap-2 shrink-0">
             <span className="text-2xl">🔥</span>
-            <span className="font-display font-bold text-xl text-stone-900">
+            <span className="hidden sm:inline font-display font-bold text-xl text-stone-900">
               Promo<span className="text-brand-500">Vitrine</span>
             </span>
           </Link>

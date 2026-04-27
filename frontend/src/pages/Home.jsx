@@ -71,34 +71,27 @@ export default function Home() {
     <div className="min-h-screen bg-stone-50">
       <Header categories={categories} />
 
-      {/* Hero */}
-      <div className="bg-gradient-to-r from-brand-600 to-orange-500 text-white py-10 px-4">
-        <div className="max-w-7xl mx-auto text-center">
-          <h1 className="font-display font-extrabold text-3xl sm:text-4xl mb-2">
-            🔥 As melhores ofertas do dia
-          </h1>
-          <p className="text-orange-100 text-lg">Promoções selecionadas a dedo para você economizar</p>
-        </div>
-
-        {/* Lojas */}
-        <div className="max-w-7xl mx-auto mt-6 flex items-center justify-center gap-3 overflow-x-auto pb-1 flex-nowrap">
+      {/* Lojas Parceiras */}
+      <div className="bg-stone-50 py-4 px-4 border-b border-stone-100">
+        <p className="text-center text-xs text-stone-400 font-medium mb-3">Lojas Parceiras</p>
+        <div className="flex items-center gap-4 overflow-x-auto pb-1 justify-start sm:justify-center">
           {[
-            { name: 'Shopee',          img: 'https://i.postimg.cc/c1Mb4hhF/download-(3).jpg' },
-            { name: 'Amazon',          img: 'https://i.postimg.cc/Qtg0CNQH/Minecraft-(English-Arabic-Box)-Play-Station-4-Edizione-Regno-Unito.jpg' },
-            { name: 'Mercado Livre',   img: 'https://i.postimg.cc/0j2dNY2y/Escola-de-E-commerce-Aprenda-a-viver-de-vendas-online.jpg' },
-            { name: 'AliExpress',      img: 'https://i.postimg.cc/J405V52G/download-(4).jpg' },
-            { name: 'Shein',           img: 'https://i.postimg.cc/7L83z8Y0/SHEIN-icon.jpg' },
-            { name: 'Magazine Luiza',  img: 'https://i.postimg.cc/PJRZr0RJ/Link-Loja-Magalu.jpg' },
-            { name: 'Americanas',      img: 'https://i.postimg.cc/T3mmf7qQ/JOVEM-APRENDIZ-LOJAS-AMERICANAS-2019-Inscricoes-Abertas.jpg' },
+            { name: 'Shopee',         key: 'shopee',        img: 'https://i.postimg.cc/c1Mb4hhF/download-(3).jpg' },
+            { name: 'Amazon',         key: 'amazon',        img: 'https://i.postimg.cc/Qtg0CNQH/Minecraft-(English-Arabic-Box)-Play-Station-4-Edizione-Regno-Unito.jpg' },
+            { name: 'Mercado Livre',  key: 'mercadolivre',  img: 'https://i.postimg.cc/0j2dNY2y/Escola-de-E-commerce-Aprenda-a-viver-de-vendas-online.jpg' },
+            { name: 'AliExpress',     key: 'aliexpress',    img: 'https://i.postimg.cc/J405V52G/download-(4).jpg' },
+            { name: 'Shein',          key: 'shein',         img: 'https://i.postimg.cc/7L83z8Y0/SHEIN-icon.jpg' },
+            { name: 'Magazine Luiza', key: 'magalu',        img: 'https://i.postimg.cc/PJRZr0RJ/Link-Loja-Magalu.jpg' },
+            { name: 'Americanas',     key: 'americanas',    img: 'https://i.postimg.cc/T3mmf7qQ/JOVEM-APRENDIZ-LOJAS-AMERICANAS-2019-Inscricoes-Abertas.jpg' },
           ].map(loja => (
-            <div key={loja.name} className="flex flex-col items-center gap-1 shrink-0">
-              <img
-                src={loja.img}
-                alt={loja.name}
-                className="w-12 h-12 rounded-xl object-cover border-2 border-white/30 shadow"
-              />
-              <span className="text-[10px] text-white/80 font-medium">{loja.name}</span>
-            </div>
+            <button
+              key={loja.key}
+              onClick={() => setPlatform(prev => prev === loja.key ? '' : loja.key)}
+              className={`flex flex-col items-center gap-1 shrink-0 transition-opacity ${platform === loja.key ? 'opacity-100' : 'opacity-70 hover:opacity-100'}`}
+            >
+              <img src={loja.img} alt={loja.name} className={`w-12 h-12 rounded-xl object-cover border-2 transition-colors ${platform === loja.key ? 'border-brand-500' : 'border-stone-200'}`} />
+              <span className="text-[10px] text-stone-500 font-medium">{loja.name}</span>
+            </button>
           ))}
         </div>
       </div>
