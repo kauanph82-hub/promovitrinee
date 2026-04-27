@@ -37,8 +37,12 @@ export default function Home() {
 
   const loadCategories = useCallback(async () => {
     try {
+      const cached = sessionStorage.getItem('categories');
+      if (cached) { setCategories(JSON.parse(cached)); return; }
       const { data } = await api.get('/categories');
-      setCategories(Array.isArray(data) ? data : []);
+      const arr = Array.isArray(data) ? data : [];
+      setCategories(arr);
+      sessionStorage.setItem('categories', JSON.stringify(arr));
     } catch { setCategories([]); }
   }, []);
 
@@ -61,6 +65,11 @@ export default function Home() {
 
   useEffect(() => { loadCategories(); }, [loadCategories]);
   useEffect(() => { loadProducts(1); }, [loadProducts]);
+
+  // Acorda o servidor se estiver dormindo
+  useEffect(() => {
+    fetch(`${import.meta.env.VITE_API_URL?.replace('/api', '') || ''}/api/health`).catch(() => {});
+  }, []);
 
   function handleSearch(e) {
     e.preventDefault();

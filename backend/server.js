@@ -59,5 +59,14 @@ app.use((err, req, res, next) => {
 const PORT = process.env.PORT || 3001;
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`🚀 Servidor rodando na porta ${PORT}`);
-  startBot(); // Inicia o bot do Telegram
+  startBot();
+
+  // Keep-alive: ping a cada 14 minutos para evitar que o Render durma
+  if (process.env.NODE_ENV === 'production' && process.env.RENDER_EXTERNAL_URL) {
+    setInterval(() => {
+      const url = `${process.env.RENDER_EXTERNAL_URL}/api/health`;
+      fetch(url).catch(() => {});
+      console.log('🏓 Keep-alive ping');
+    }, 14 * 60 * 1000);
+  }
 });
