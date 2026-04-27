@@ -4,6 +4,8 @@ import ProductModal from '../components/ProductModal';
 import api from '../utils/api';
 import { formatPrice, calcDiscount, getPlatform } from '../utils/platform';
 
+const HEART_IMG = 'https://i.postimg.cc/xCXnyTCS/download-(5).jpg';
+
 const LOJAS = [
   { name: 'Shopee',         key: 'shopee',        img: 'https://i.postimg.cc/138ZnL1n/br-50009109-2e3301fdd34755e5e0f48c608ba6fc16.jpg',        domain: 'shopee.com.br' },
   { name: 'Amazon',         key: 'amazon',        img: 'https://i.postimg.cc/Qtg0CNQH/Minecraft-(English-Arabic-Box)-Play-Station-4-Edizione-Regno-Unito.jpg', domain: 'amazon.com.br' },
@@ -31,6 +33,21 @@ export default function Home() {
   const [searchOpen, setSearchOpen] = useState(false);
   const [lojasOpen, setLojasOpen] = useState(false);
   const [catOpen, setCatOpen] = useState(false);
+  const [wishlist, setWishlist] = useState(() => {
+    try { return JSON.parse(localStorage.getItem('wishlist') || '[]'); } catch { return []; }
+  });
+  const [showWishlist, setShowWishlist] = useState(false);
+
+  function toggleWishlist(product) {
+    setWishlist(prev => {
+      const exists = prev.find(p => p.id === product.id);
+      const next = exists ? prev.filter(p => p.id !== product.id) : [...prev, product];
+      localStorage.setItem('wishlist', JSON.stringify(next));
+      return next;
+    });
+  }
+
+  function isWished(id) { return wishlist.some(p => p.id === id); }
 
   const search = searchParams.get('busca') || '';
   const LIMIT = 24;
@@ -109,9 +126,12 @@ export default function Home() {
 
             {/* Ações direita */}
             <div className="flex items-center gap-1 ml-auto">
-              <button className="flex flex-col items-center gap-1 w-[90px] py-1 hover:bg-gray-50 rounded-lg transition-colors">
-                <span className="flex items-center justify-center w-10 h-10 rounded-full bg-[#00AAB5] text-white text-lg">❤️</span>
+              <button onClick={() => setShowWishlist(true)} className="flex flex-col items-center gap-1 w-[90px] py-1 hover:bg-gray-50 rounded-lg transition-colors relative">
+                <span className="flex items-center justify-center w-10 h-10 rounded-full bg-[#00AAB5] overflow-hidden">
+                  <img src={HEART_IMG} alt="Desejos" className="w-full h-full object-cover" />
+                </span>
                 <span className="text-[10px] text-gray-500 text-center leading-tight">Lista de desejos</span>
+                {wishlist.length > 0 && <span className="absolute top-0 right-2 bg-red-500 text-white text-[9px] font-bold rounded-full w-4 h-4 flex items-center justify-center">{wishlist.length}</span>}
               </button>
               <button className="flex flex-col items-center gap-1 w-[90px] py-1 hover:bg-gray-50 rounded-lg transition-colors">
                 <span className="flex items-center justify-center w-10 h-10 rounded-full bg-[#00AAB5] text-white text-lg">🔔</span>
@@ -338,6 +358,12 @@ export default function Home() {
                             : <div className="size-[100px] md:size-[160px] lg:size-[180px] rounded-xl bg-gray-100 flex items-center justify-center text-3xl">🛍️</div>
                           }
                           {disc && <div className="absolute top-1 left-1 bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-lg">-{disc}%</div>}
+                          <button
+                            onClick={e => { e.stopPropagation(); toggleWishlist(p); }}
+                            className="absolute top-1 right-1 w-7 h-7 rounded-full overflow-hidden border-2 border-white shadow-sm opacity-70 hover:opacity-100 transition-opacity"
+                          >
+                            <img src={HEART_IMG} alt="Desejo" className={`w-full h-full object-cover ${isWished(p.id) ? 'opacity-100' : 'opacity-40'}`} />
+                          </button>
                         </div>
                         {/* Info */}
                         <div className="flex size-full flex-col pb-3 justify-between border-b border-gray-100">
@@ -405,8 +431,62 @@ export default function Home() {
         <p className="text-xs mt-1">Os links são de afiliado. Ao comprar, você apoia este site sem custo extra.</p>
       </footer>
 
-      {/* Modal */}
+      {/* Modal produto */}
       {selected && <ProductModal product={selected} onClose={() => setSelected(null)} />}
+
+      {/* ── MODAL LISTA DE DESEJOS ── */}
+      {showWishlist && (
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/50 px-4" onClick={() => setShowWishlist(false)}>
+          <div className="bg-white rounded-2xl w-full max-w-lg max-h-[80vh] overflow-hidden flex flex-col" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between p-4 border-b border-gray-100">
+              <div className="flex items-center gap-2">
+                <img src={HEART_IMG} alt="Desejos" className="w-6 h-6 rounded-full object-cover" />
+                <h2 className="font-bold text-gray-800">Lista de Desejos ({wishlist.length})</h2>
+              </div>
+              <button onClick={() => setShowWishlist(false)} className="text-gray-400 hover:text-gray-600 text-xl">✕</button>
+            </div>
+            <div className="overflow-y-auto flex-1 p-4">
+              {wishlist.length === 0 ? (
+                <div className="text-center py-12 text-gray-400">
+                  <img src={HEART_IMG} alt="" className="w-12 h-12 rounded-full object-cover mx-auto mb-3 opacity-30" />
+                  <p className="font-medium">Sua lista está vazia</p>
+                  <p className="text-sm mt-1">Clique no ❤️ nos produtos para salvar</p>
+                </div>
+              ) : (
+                <div className="flex flex-col gap-3">
+                  {wishlist.map(p => {
+                    const plat = getPlatform(p.platform);
+                    const img = p.images?.[0]?.url;
+                    return (
+                      <div key={p.id} className="flex items-center gap-3 p-3 border border-gray-100 rounded-xl hover:bg-gray-50">
+                        {img
+                          ? <img src={img} alt={p.title} className="w-14 h-14 rounded-lg object-cover shrink-0" />
+                          : <div className="w-14 h-14 rounded-lg bg-gray-100 flex items-center justify-center text-xl shrink-0">🛍️</div>
+                        }
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium text-gray-700 line-clamp-2">{p.title}</p>
+                          <p className="text-xs text-gray-400 mt-0.5">{plat.domain || plat.label}</p>
+                          <p className="text-sm font-bold text-gray-800 mt-0.5">
+                            {p.promo_price > 0 ? formatPrice(p.promo_price) : p.original_price > 0 ? formatPrice(p.original_price) : 'Ver preço'}
+                          </p>
+                        </div>
+                        <button onClick={() => toggleWishlist(p)} className="shrink-0 p-2 text-red-400 hover:text-red-600">✕</button>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+            {wishlist.length > 0 && (
+              <div className="p-4 border-t border-gray-100">
+                <button onClick={() => { setWishlist([]); localStorage.removeItem('wishlist'); }} className="w-full text-sm text-gray-400 hover:text-red-500 transition-colors">
+                  Limpar lista
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* ── NAVBAR MOBILE FIXA (estilo Promobit) ── */}
       <nav className="fixed bottom-0 left-0 z-20 h-20 w-full flex items-start justify-between border-t border-gray-200 bg-white shadow-[0_-2px_4px_0_rgba(19,19,19,0.1)] lg:hidden px-1">
@@ -418,8 +498,9 @@ export default function Home() {
           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
           <p className="text-xs font-bold mt-1">Buscar</p>
         </button>
-        <button className="flex h-full flex-1 flex-col items-center justify-start px-0 pt-4 text-center text-gray-400">
-          <span className="text-xl">❤️</span>
+        <button onClick={() => setShowWishlist(true)} className="flex h-full flex-1 flex-col items-center justify-start px-0 pt-3 text-center text-gray-400 relative">
+          <img src={HEART_IMG} alt="Desejos" className="w-6 h-6 rounded-full object-cover" />
+          {wishlist.length > 0 && <span className="absolute top-3 right-4 bg-red-500 text-white text-[9px] font-bold rounded-full w-4 h-4 flex items-center justify-center">{wishlist.length}</span>}
           <p className="text-xs font-bold mt-1">Desejos</p>
         </button>
         <button className="flex h-full flex-1 flex-col items-center justify-start px-0 pt-4 text-center text-gray-400">
