@@ -6,6 +6,7 @@ export const PLATFORMS = {
   shein:         { label: 'Shein',         domain: 'shein.com.br',         color: 'bg-pink-100   text-pink-700',   emoji: '👗', img: 'https://i.postimg.cc/7L83z8Y0/SHEIN-icon.jpg' },
   magalu:        { label: 'Magazine',      domain: 'magazineluiza.com.br', color: 'bg-blue-100   text-blue-700',   emoji: '🏪', img: 'https://i.postimg.cc/PJRZr0RJ/Link-Loja-Magalu.jpg' },
   americanas:    { label: 'Americanas',    domain: 'americanas.com.br',    color: 'bg-red-100    text-red-800',    emoji: '🏬', img: 'https://i.postimg.cc/T3mmf7qQ/JOVEM-APRENDIZ-LOJAS-AMERICANAS-2019-Inscricoes-Abertas.jpg' },
+  tiktok:        { label: 'TikTok Shop',   domain: 'tiktok.com/shop',      color: 'bg-gray-100   text-gray-800',   emoji: '🎵', img: 'https://i.postimg.cc/GtKwsqTP/download-(6).jpg' },
   other:         { label: 'Outro',         domain: null,                   color: 'bg-stone-100  text-stone-600',  emoji: '🔗', img: null },
 };
 

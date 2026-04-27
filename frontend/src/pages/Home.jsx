@@ -14,6 +14,7 @@ const LOJAS = [
   { name: 'Shein',          key: 'shein',         img: 'https://i.postimg.cc/7L83z8Y0/SHEIN-icon.jpg',                                           domain: 'shein.com.br' },
   { name: 'Magazine Luiza', key: 'magalu',        img: 'https://i.postimg.cc/PJRZr0RJ/Link-Loja-Magalu.jpg',                                     domain: 'magazineluiza.com.br' },
   { name: 'Americanas',     key: 'americanas',    img: 'https://i.postimg.cc/T3mmf7qQ/JOVEM-APRENDIZ-LOJAS-AMERICANAS-2019-Inscricoes-Abertas.jpg', domain: 'americanas.com.br' },
+  { name: 'TikTok Shop',   key: 'tiktok',        img: 'https://i.postimg.cc/GtKwsqTP/download-(6).jpg',                                                    domain: 'tiktok.com/shop' },
 ];
 
 const ADMIN_AVATAR = 'https://i.postimg.cc/j2vrqS1Z/Oakley-Plantaris-50-s-ADS-Painting-study-of-retro-advertisements-oakley-oakleybr-oakley-oakle.jpg';
@@ -448,8 +449,8 @@ export default function Home() {
             <div className="overflow-y-auto flex-1 p-4">
               {wishlist.length === 0 ? (
                 <div className="text-center py-12 text-gray-400">
-                  <img src={} alt="" className="w-12 h-12 rounded-full object-cover mx-auto mb-3 opacity-30" />
-                  <p className="font-medium">Sua lista está vazia</p>
+
+                  <p className="font-medium"> <imSua lista está vazia</p>
                   <p className="text-sm mt-1">Clique no ❤️ nos produtos para salvar</p>
                 </div>
               ) : (
