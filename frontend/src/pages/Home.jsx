@@ -100,8 +100,12 @@ export default function Home() {
     <div style={{ fontFamily: "'Rubik', sans-serif" }} className="min-h-screen bg-[#f4f4f4] pb-20 lg:pb-0">
 
       {/* ── BARRA DE ANÚNCIO TOPO ── */}
-      <div className="w-full bg-white h-16 lg:h-10 flex items-center justify-center border-b border-gray-100">
-        <div className="text-xs text-gray-400 italic">Espaço para banner de anúncio</div>
+      <div className="w-full bg-white border-b border-gray-100">
+        <img
+          src="https://i.postimg.cc/nc1dGyWX/Black-Friday-Mercado-Livre-Cupons-e-ofertas-(1).jpg"
+          alt="Banner de anúncio"
+          className="w-full h-auto block"
+        />
       </div>
 
       {/* ── HEADER FIXO ── */}
