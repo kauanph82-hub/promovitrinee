@@ -29,7 +29,7 @@ export default function Header({ categories = [] }) {
             <div className="relative">
               <input
                 type="text"
-                placeholder="Buscar ofertas..."
+                placeholder="Pesquisar..."
                 value={search}
                 onChange={e => setSearch(e.target.value)}
                 className="input pr-10 bg-stone-50"
@@ -52,8 +52,6 @@ export default function Header({ categories = [] }) {
               className="w-10 h-10 rounded-full object-cover border-2 border-stone-200 hover:border-brand-500 transition-colors"
             />
           </Link>
-
-          {/* Hamburger mobile */}
           <button onClick={() => setMenuOpen(!menuOpen)} className="md:hidden p-2 rounded-lg hover:bg-stone-100">
             <div className="space-y-1.5">
               <span className="block w-5 h-0.5 bg-stone-600 transition-all"></span>
@@ -81,14 +79,13 @@ export default function Header({ categories = [] }) {
           {/* Logo Admin Mobile */}
           <Link 
             to="/silva-admin" 
-            className="md:hidden flex items-center gap-2 text-xs font-medium px-3 py-1.5 rounded-full bg-stone-800 text-white hover:bg-brand-600 whitespace-nowrap transition-colors"
+            className="md:hidden flex items-center gap-2 text-xs font-medium px-2 py-1.5 rounded-full bg-stone-800 text-white hover:bg-brand-600 whitespace-nowrap transition-colors"
           >
             <img 
               src="https://i.postimg.cc/j2vrqS1Z/Oakley-Plantaris-50-s-ADS-Painting-study-of-retro-advertisements-oakley-oakleybr-oakley-oakle.jpg" 
               alt="Admin" 
-              className="w-5 h-5 rounded-full object-cover"
+              className="w-6 h-6 rounded-full object-cover"
             />
-            Admin
           </Link>
         </nav>
       </div>

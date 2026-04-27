@@ -79,6 +79,28 @@ export default function Home() {
           </h1>
           <p className="text-orange-100 text-lg">Promoções selecionadas a dedo para você economizar</p>
         </div>
+
+        {/* Lojas */}
+        <div className="max-w-7xl mx-auto mt-6 flex items-center justify-center gap-3 overflow-x-auto pb-1 flex-nowrap">
+          {[
+            { name: 'Shopee',          img: 'https://i.postimg.cc/c1Mb4hhF/download-(3).jpg' },
+            { name: 'Amazon',          img: 'https://i.postimg.cc/Qtg0CNQH/Minecraft-(English-Arabic-Box)-Play-Station-4-Edizione-Regno-Unito.jpg' },
+            { name: 'Mercado Livre',   img: 'https://i.postimg.cc/0j2dNY2y/Escola-de-E-commerce-Aprenda-a-viver-de-vendas-online.jpg' },
+            { name: 'AliExpress',      img: 'https://i.postimg.cc/J405V52G/download-(4).jpg' },
+            { name: 'Shein',           img: 'https://i.postimg.cc/7L83z8Y0/SHEIN-icon.jpg' },
+            { name: 'Magazine Luiza',  img: 'https://i.postimg.cc/PJRZr0RJ/Link-Loja-Magalu.jpg' },
+            { name: 'Americanas',      img: 'https://i.postimg.cc/T3mmf7qQ/JOVEM-APRENDIZ-LOJAS-AMERICANAS-2019-Inscricoes-Abertas.jpg' },
+          ].map(loja => (
+            <div key={loja.name} className="flex flex-col items-center gap-1 shrink-0">
+              <img
+                src={loja.img}
+                alt={loja.name}
+                className="w-12 h-12 rounded-xl object-cover border-2 border-white/30 shadow"
+              />
+              <span className="text-[10px] text-white/80 font-medium">{loja.name}</span>
+            </div>
+          ))}
+        </div>
       </div>
 
       <div className="max-w-7xl mx-auto px-4 py-6">
