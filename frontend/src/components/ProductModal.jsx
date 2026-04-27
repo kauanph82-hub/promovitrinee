@@ -55,6 +55,19 @@ export default function ProductModal({ product, onClose }) {
           </span>
           <div className="flex items-center gap-2">
             <button
+              onClick={() => {
+                if (navigator.share) {
+                  navigator.share({ title: product.title, url: product.affiliate_link });
+                } else {
+                  navigator.clipboard.writeText(product.affiliate_link);
+                }
+              }}
+              className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-stone-100 transition-colors"
+              title="Compartilhar"
+            >
+              <img src="https://i.postimg.cc/BvzQzwXN/3832624.png" alt="Compartilhar" className="w-5 h-5 object-contain" />
+            </button>
+            <button
               onClick={toggleWish}
               className={`w-8 h-8 flex items-center justify-center rounded-full transition-colors text-lg ${wished ? 'bg-red-50 text-red-500' : 'hover:bg-stone-100 text-stone-400'}`}
               title={wished ? 'Remover dos desejos' : 'Adicionar aos desejos'}
@@ -191,7 +204,25 @@ export default function ProductModal({ product, onClose }) {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
             </svg>
           </button>
-          <p className="text-center text-xs text-stone-400 mt-2">
+          {/* Link minimalista */}
+          <div className="flex items-center justify-center gap-2 mt-2">
+            <a
+              href={product.affiliate_link}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-xs text-gray-400 hover:text-gray-600 truncate max-w-[260px]"
+            >
+              {product.affiliate_link}
+            </a>
+            <button
+              onClick={() => { navigator.clipboard.writeText(product.affiliate_link); }}
+              className="text-xs text-gray-400 hover:text-[#00AAB5] shrink-0"
+              title="Copiar link"
+            >
+              📋
+            </button>
+          </div>
+          <p className="text-center text-xs text-stone-400 mt-1">
             Você será redirecionado para {platform.label}
           </p>
         </div>
