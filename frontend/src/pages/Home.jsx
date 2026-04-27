@@ -24,8 +24,13 @@ export default function Home() {
   const loadCategories = useCallback(async () => {
     try {
       const { data } = await api.get('/categories');
-      setCategories(data);
-    } catch {}
+      // Validação para evitar erros de undefined
+      const categoriesArray = Array.isArray(data) ? data : [];
+      setCategories(categoriesArray);
+    } catch (err) {
+      console.error('Erro ao carregar categorias:', err);
+      setCategories([]);
+    }
   }, []);
 
   const loadProducts = useCallback(async (p = 1, append = false) => {
@@ -36,11 +41,21 @@ export default function Home() {
       if (platform) params.platform = platform;
 
       const { data } = await api.get('/products', { params });
-      setProducts(prev => append ? [...prev, ...data.products] : data.products);
-      setTotal(data.total);
+      
+      // Validação para evitar erros de undefined
+      const productsArray = Array.isArray(data?.products) ? data.products : [];
+      const totalCount = typeof data?.total === 'number' ? data.total : 0;
+      
+      setProducts(prev => append ? [...(prev || []), ...productsArray] : productsArray);
+      setTotal(totalCount);
       setPage(p);
     } catch (err) {
-      console.error(err);
+      console.error('Erro ao carregar produtos:', err);
+      // Em caso de erro, define arrays vazios para evitar undefined
+      if (!append) {
+        setProducts([]);
+        setTotal(0);
+      }
     } finally {
       setLoading(false);
     }
