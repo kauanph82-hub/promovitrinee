@@ -75,18 +75,6 @@ export default function Header({ categories = [] }) {
               {cat.icon} {cat.name}
             </Link>
           ))}
-          
-          {/* Logo Admin Mobile */}
-          <Link 
-            to="/silva-admin" 
-            className="md:hidden flex items-center gap-2 text-xs font-medium px-2 py-1.5 rounded-full bg-stone-800 text-white hover:bg-brand-600 whitespace-nowrap transition-colors"
-          >
-            <img 
-              src="https://i.postimg.cc/j2vrqS1Z/Oakley-Plantaris-50-s-ADS-Painting-study-of-retro-advertisements-oakley-oakleybr-oakley-oakle.jpg" 
-              alt="Admin" 
-              className="w-6 h-6 rounded-full object-cover"
-            />
-          </Link>
         </nav>
       </div>
     </header>
