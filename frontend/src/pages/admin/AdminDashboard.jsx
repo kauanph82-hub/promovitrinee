@@ -71,7 +71,7 @@ export default function AdminDashboard() {
       <header className="bg-stone-900 text-white px-4 py-4">
         <div className="max-w-6xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <img src="https://i.postimg.cc/HjGC0fv9/gemini-2-5-flash-image-quero-que-vc-troque-o-nome-o-simbulo-por-esse-de-cupom-e-quero-que-vc-troque.png" alt="Logo" className="h-8 w-auto object-contain" />
+            <img src="https://i.postimg.cc/1RX5SSp2/gemini-2-5-flash-image-quero-que-vc-troque-o-nome-o-simbulo-por-esse-de-cupom-e-quero-que-vc-troque.png" alt="Logo" className="h-8 w-auto object-contain" />
             <div>
               <p className="text-stone-400 text-xs">Olá, {admin?.username}</p>
             </div>
