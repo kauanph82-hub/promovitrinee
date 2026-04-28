@@ -91,6 +91,7 @@ export default function Home() {
     e.preventDefault();
     if (searchInput.trim()) setSearchParams({ busca: searchInput.trim() });
     setSearchOpen(false);
+    setSearchInput('');
   }
 
   const hasMore = useMemo(() => products.length < total, [products.length, total]);
@@ -505,10 +506,10 @@ export default function Home() {
       {/* ── NAVBAR MOBILE FIXA (estilo Promobit) ── */}
       <nav className="fixed bottom-0 left-0 z-20 h-20 w-full flex items-start justify-between border-t border-gray-200 bg-white shadow-[0_-2px_4px_0_rgba(19,19,19,0.1)] lg:hidden px-1">
         <Link to="/" className="flex h-full flex-1 flex-col items-center justify-start px-0 pt-3 text-center text-[#00AAB5]">
-          <img src="https://i.postimg.cc/1RX5SSp2/gemini-2-5-flash-image-quero-que-vc-troque-o-nome-o-simbulo-por-esse-de-cupom-e-quero-que-vc-troque.png" alt="Logo" className="h-6 w-auto object-contain" />
+          <span className="text-2xl">🔥</span>
           <p className="text-xs font-bold mt-1">Ofertas</p>
         </Link>
-        <button onClick={() => setSearchOpen(true)} className="flex h-full flex-1 flex-col items-center justify-start px-0 pt-4 text-center text-gray-400">
+        <button onClick={() => setSearchOpen(prev => !prev)} className="flex h-full flex-1 flex-col items-center justify-start px-0 pt-4 text-center text-gray-400">
           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
           <p className="text-xs font-bold mt-1">Buscar</p>
         </button>
