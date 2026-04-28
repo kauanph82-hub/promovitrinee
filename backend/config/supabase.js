@@ -18,7 +18,7 @@ const supabase = createClient(
   process.env.SUPABASE_URL,
   process.env.SUPABASE_SERVICE_KEY // service key para operações no backend
 );
-
-console.log('✅ Supabase configurado com sucesso!');
+abas
+console.log('✅ Supe configurado com sucesso!');
 
 module.exports = supabase;
