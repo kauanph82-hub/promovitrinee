@@ -1,10 +1,16 @@
 import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 
 export default function Header({ categories = [] }) {
   const [search, setSearch] = useState('');
   const [menuOpen, setMenuOpen] = useState(false);
   const navigate = useNavigate();
+  const location = useLocation();
+
+  // Detecta qual categoria está ativa pela URL
+  const activeSlug = location.pathname.startsWith('/categoria/')
+    ? location.pathname.split('/categoria/')[1]
+    : null;
 
   function handleSearch(e) {
     e.preventDefault();
@@ -63,14 +69,19 @@ export default function Header({ categories = [] }) {
 
         {/* Categorias */}
         <nav className={`${menuOpen ? 'flex' : 'hidden'} md:flex flex-wrap gap-1 pb-2 overflow-x-auto`}>
-          <Link to="/" className="text-xs font-semibold px-3 py-1.5 rounded-full bg-brand-500 text-white whitespace-nowrap">
+          <Link
+            to="/"
+            onClick={() => setMenuOpen(false)}
+            className={`text-xs font-semibold px-3 py-1.5 rounded-full whitespace-nowrap transition-colors ${!activeSlug ? 'bg-[#00AAB5] text-white' : 'bg-stone-100 text-stone-700 hover:bg-stone-200'}`}
+          >
             🔥 Todas
           </Link>
           {categories.map(cat => (
             <Link
               key={cat.id}
               to={`/categoria/${cat.slug}`}
-              className="text-xs font-medium px-3 py-1.5 rounded-full bg-stone-100 text-stone-700 hover:bg-brand-100 hover:text-brand-700 whitespace-nowrap transition-colors"
+              onClick={() => setMenuOpen(false)}
+              className={`text-xs font-medium px-3 py-1.5 rounded-full whitespace-nowrap transition-colors ${activeSlug === cat.slug ? 'bg-[#00AAB5] text-white font-semibold' : 'bg-stone-100 text-stone-700 hover:bg-stone-200'}`}
             >
               {cat.icon} {cat.name}
             </Link>
