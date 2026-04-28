@@ -86,6 +86,15 @@ export default function Header({ categories = [] }) {
               {cat.icon} {cat.name}
             </Link>
           ))}
+
+          {/* Avatar — só visual, sem link */}
+          <div className="md:hidden flex items-center px-1 py-1">
+            <img
+              src="https://i.postimg.cc/j2vrqS1Z/Oakley-Plantaris-50-s-ADS-Painting-study-of-retro-advertisements-oakley-oakleybr-oakley-oakle.jpg"
+              alt="Perfil"
+              className="w-7 h-7 rounded-full object-cover border-2 border-stone-200"
+            />
+          </div>
         </nav>
       </div>
     </header>
