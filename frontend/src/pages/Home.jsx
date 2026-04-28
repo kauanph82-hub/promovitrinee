@@ -450,7 +450,7 @@ export default function Home() {
               {wishlist.length === 0 ? (
                 <div className="text-center py-12 text-gray-400">
 
-                  <p className="font-medium"> <imSua lista está vazia</p>
+                  <p className="font-medium">Sua lista de desejos está vazia</p>
                   <p className="text-sm mt-1">Clique no ❤️ nos produtos para salvar</p>
                 </div>
               ) : (
@@ -524,4 +524,3 @@ export default function Home() {
     </div>
   );
 }
-
