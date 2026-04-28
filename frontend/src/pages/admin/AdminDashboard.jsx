@@ -19,9 +19,7 @@ export default function AdminDashboard() {
     }
     
     try {
-      // Admin busca todos (incluindo inativos): precisaria de endpoint específico
-      // Por simplicidade, usa o mesmo endpoint público
-      const { data } = await api.get('/products', { params: { page: p, limit: 20 } });
+      const { data } = await api.get('/products', { params: { page: p, limit: 50 } });
       setProducts(data.products);
       setTotal(data.total);
       setPage(p);
@@ -195,6 +193,53 @@ export default function AdminDashboard() {
                 <Link to="/silva-admin/produto/novo" className="btn-primary mt-4 inline-block">Adicionar primeiro produto</Link>
               </div>
             )}
+          </div>
+        )}
+
+        {/* Paginação */}
+        {total > 50 && (
+          <div className="flex items-center justify-between mt-4 px-1">
+            <p className="text-sm text-stone-500">
+              Mostrando <span className="font-semibold">{(page - 1) * 50 + 1}–{Math.min(page * 50, total)}</span> de <span className="font-semibold">{total}</span> produtos
+            </p>
+            <div className="flex gap-2">
+              <button
+                onClick={() => loadProducts(page - 1)}
+                disabled={page === 1}
+                className="px-4 py-2 text-sm border border-stone-200 rounded-lg hover:border-stone-400 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                ← Anterior
+              </button>
+              {/* Páginas numeradas */}
+              {Array.from({ length: Math.ceil(total / 50) }, (_, i) => i + 1)
+                .filter(p => p === 1 || p === Math.ceil(total / 50) || Math.abs(p - page) <= 2)
+                .reduce((acc, p, i, arr) => {
+                  if (i > 0 && p - arr[i - 1] > 1) acc.push('...');
+                  acc.push(p);
+                  return acc;
+                }, [])
+                .map((p, i) =>
+                  p === '...' ? (
+                    <span key={`dots-${i}`} className="px-2 py-2 text-sm text-stone-400">…</span>
+                  ) : (
+                    <button
+                      key={p}
+                      onClick={() => loadProducts(p)}
+                      className={`px-3 py-2 text-sm rounded-lg border transition-colors ${page === p ? 'bg-stone-900 text-white border-stone-900' : 'border-stone-200 hover:border-stone-400'}`}
+                    >
+                      {p}
+                    </button>
+                  )
+                )
+              }
+              <button
+                onClick={() => loadProducts(page + 1)}
+                disabled={page * 50 >= total}
+                className="px-4 py-2 text-sm border border-stone-200 rounded-lg hover:border-stone-400 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                Próxima →
+              </button>
+            </div>
           </div>
         )}
       </div>
