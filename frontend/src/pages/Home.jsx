@@ -283,8 +283,11 @@ export default function Home() {
 
         {/* ── OFERTAS + FILTROS ── */}
         <div className="mt-8 pb-8">
-          <div className="flex flex-col gap-4 mb-5 lg:flex-row lg:items-center lg:justify-between">
-            <h1 className="text-gray-800 text-xl font-bold lg:text-3xl">Ofertas</h1>
+          <h1 className="text-gray-800 text-xl font-bold lg:text-3xl mb-4">Ofertas</h1>
+
+          {/* Lojas parceiras */}
+          <div className="mb-5">
+            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Lojas parceiras</p>
             <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-none">
               <button onClick={() => setPlatform('')}
                 className={`flex items-center gap-1 shrink-0 text-xs font-bold px-4 py-2 rounded-full border transition-all ${!platform ? 'bg-[#00AAB5] border-[#00AAB5] text-white' : 'border-gray-300 text-gray-600 hover:border-gray-400'}`}>
