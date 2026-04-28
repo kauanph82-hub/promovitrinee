@@ -11,15 +11,16 @@ export default function AdminDashboard() {
   const [deleting, setDeleting] = useState(null);
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
+  const [search, setSearch] = useState('');
+  const [searchInput, setSearchInput] = useState('');
+  const LIMIT = 50;
 
-  async function loadProducts(p = 1) {
-    // Só mostra loading na primeira carga
-    if (p === 1 && products.length === 0) {
-      setLoading(true);
-    }
-    
+  async function loadProducts(p = 1, q = search) {
+    setLoading(true);
     try {
-      const { data } = await api.get('/products', { params: { page: p, limit: 50 } });
+      const params = { page: p, limit: LIMIT };
+      if (q) params.search = q;
+      const { data } = await api.get('/products', { params });
       setProducts(data.products);
       setTotal(data.total);
       setPage(p);
@@ -30,7 +31,21 @@ export default function AdminDashboard() {
     }
   }
 
-  useEffect(() => { loadProducts(); }, []);
+  useEffect(() => { loadProducts(1, ''); }, []);
+
+  function handleSearch(e) {
+    e.preventDefault();
+    setSearch(searchInput);
+    loadProducts(1, searchInput);
+  }
+
+  function clearSearch() {
+    setSearchInput('');
+    setSearch('');
+    loadProducts(1, '');
+  }
+
+  const totalPages = Math.ceil(total / LIMIT);
 
   async function handleDelete(id) {
     if (!confirm('Tem certeza que deseja remover este produto?')) return;
@@ -105,12 +120,31 @@ export default function AdminDashboard() {
           ))}
         </div>
 
-        {/* Ações */}
-        <div className="flex items-center justify-between mb-4">
+        {/* Ações + Busca */}
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-4">
           <h2 className="font-display font-bold text-xl text-stone-900">Produtos postados</h2>
-          <Link to="/silva-admin/produto/novo" className="btn-primary flex items-center gap-2">
-            + Novo produto
-          </Link>
+          <div className="flex items-center gap-2 w-full sm:w-auto">
+            <form onSubmit={handleSearch} className="flex-1 sm:flex-initial">
+              <div className="flex items-center gap-2 border border-stone-200 rounded-lg px-3 py-2 bg-white focus-within:border-stone-400">
+                <svg className="w-4 h-4 text-stone-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+                <input
+                  type="text"
+                  placeholder="Buscar produto..."
+                  value={searchInput}
+                  onChange={e => setSearchInput(e.target.value)}
+                  className="text-sm outline-none bg-transparent w-full sm:w-48"
+                />
+                {search && (
+                  <button type="button" onClick={clearSearch} className="text-stone-400 hover:text-stone-600">
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12"/></svg>
+                  </button>
+                )}
+              </div>
+            </form>
+            <Link to="/silva-admin/produto/novo" className="btn-primary flex items-center gap-2 whitespace-nowrap">
+              + Novo
+            </Link>
+          </div>
         </div>
 
         {/* Tabela */}
@@ -197,12 +231,12 @@ export default function AdminDashboard() {
         )}
 
         {/* Paginação */}
-        {total > 50 && (
-          <div className="flex items-center justify-between mt-4 px-1">
+        {totalPages > 1 && (
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-3 mt-4 px-1">
             <p className="text-sm text-stone-500">
-              Mostrando <span className="font-semibold">{(page - 1) * 50 + 1}–{Math.min(page * 50, total)}</span> de <span className="font-semibold">{total}</span> produtos
+              Mostrando <span className="font-semibold">{(page - 1) * LIMIT + 1}–{Math.min(page * LIMIT, total)}</span> de <span className="font-semibold">{total}</span> produtos
             </p>
-            <div className="flex gap-2">
+            <div className="flex gap-2 flex-wrap justify-center">
               <button
                 onClick={() => loadProducts(page - 1)}
                 disabled={page === 1}
@@ -210,9 +244,8 @@ export default function AdminDashboard() {
               >
                 ← Anterior
               </button>
-              {/* Páginas numeradas */}
-              {Array.from({ length: Math.ceil(total / 50) }, (_, i) => i + 1)
-                .filter(p => p === 1 || p === Math.ceil(total / 50) || Math.abs(p - page) <= 2)
+              {Array.from({ length: totalPages }, (_, i) => i + 1)
+                .filter(p => p === 1 || p === totalPages || Math.abs(p - page) <= 2)
                 .reduce((acc, p, i, arr) => {
                   if (i > 0 && p - arr[i - 1] > 1) acc.push('...');
                   acc.push(p);
@@ -234,7 +267,7 @@ export default function AdminDashboard() {
               }
               <button
                 onClick={() => loadProducts(page + 1)}
-                disabled={page * 50 >= total}
+                disabled={page >= totalPages}
                 className="px-4 py-2 text-sm border border-stone-200 rounded-lg hover:border-stone-400 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
               >
                 Próxima →
