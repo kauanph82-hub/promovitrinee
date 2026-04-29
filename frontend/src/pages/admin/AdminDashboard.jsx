@@ -7,19 +7,22 @@ import { getPlatform, formatPrice } from '../../utils/platform';
 export default function AdminDashboard() {
   const { admin, logout } = useAuth();
   const [products, setProducts] = useState([]);
+  const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
   const [deleting, setDeleting] = useState(null);
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
   const [search, setSearch] = useState('');
   const [searchInput, setSearchInput] = useState('');
+  const [categoryFilter, setCategoryFilter] = useState('');
   const LIMIT = 50;
 
-  async function loadProducts(p = 1, q = search) {
+  async function loadProducts(p = 1, q = search, catId = categoryFilter) {
     setLoading(true);
     try {
       const params = { page: p, limit: LIMIT };
       if (q) params.search = q;
+      if (catId) params.category_id = catId;
       const { data } = await api.get('/products', { params });
       setProducts(data.products);
       setTotal(data.total);
@@ -31,18 +34,26 @@ export default function AdminDashboard() {
     }
   }
 
-  useEffect(() => { loadProducts(1, ''); }, []);
+  useEffect(() => {
+    api.get('/categories').then(({ data }) => setCategories(Array.isArray(data) ? data : []));
+    loadProducts(1, '');
+  }, []);
 
   function handleSearch(e) {
     e.preventDefault();
     setSearch(searchInput);
-    loadProducts(1, searchInput);
+    loadProducts(1, searchInput, categoryFilter);
   }
 
   function clearSearch() {
     setSearchInput('');
     setSearch('');
-    loadProducts(1, '');
+    loadProducts(1, '', categoryFilter);
+  }
+
+  function handleCategoryFilter(catId) {
+    setCategoryFilter(catId);
+    loadProducts(1, search, catId);
   }
 
   const totalPages = Math.ceil(total / LIMIT);
@@ -145,6 +156,25 @@ export default function AdminDashboard() {
               + Novo
             </Link>
           </div>
+        </div>
+
+        {/* Filtro por categoria */}
+        <div className="flex gap-2 overflow-x-auto pb-2 mb-4 scrollbar-none">
+          <button
+            onClick={() => handleCategoryFilter('')}
+            className={`shrink-0 text-xs font-medium px-3 py-1.5 rounded-full border transition-colors ${!categoryFilter ? 'bg-stone-900 text-white border-stone-900' : 'bg-white border-stone-200 text-stone-600 hover:border-stone-400'}`}
+          >
+            Todas
+          </button>
+          {categories.map(c => (
+            <button
+              key={c.id}
+              onClick={() => handleCategoryFilter(c.id)}
+              className={`shrink-0 text-xs font-medium px-3 py-1.5 rounded-full border transition-colors ${categoryFilter === c.id ? 'bg-stone-900 text-white border-stone-900' : 'bg-white border-stone-200 text-stone-600 hover:border-stone-400'}`}
+            >
+              {c.icon} {c.name}
+            </button>
+          ))}
         </div>
 
         {/* Tabela */}
