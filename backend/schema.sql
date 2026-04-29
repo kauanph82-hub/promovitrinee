@@ -98,6 +98,7 @@ CREATE POLICY "Cupons visíveis publicamente" ON product_coupons
 INSERT INTO categories (name, slug, icon, description) VALUES
   ('Roupas Femininas',   'roupas-femininas',   '👗', 'Moda, vestidos, blusas e muito mais'),
   ('Roupas Masculinas',  'roupas-masculinas',  '👕', 'Camisetas, calças, tênis e acessórios'),
+  ('Acessórios',         'acessorios',         '💍', 'Bolsas, relógios, óculos e acessórios de moda'),
   ('Eletrônicos',        'eletronicos',        '📱', 'Smartphones, tablets, acessórios tech'),
   ('Informática',        'informatica',        '💻', 'Notebooks, periféricos, componentes'),
   ('Casa e Decoração',   'casa-decoracao',     '🏠', 'Móveis, utensílios e decoração'),
