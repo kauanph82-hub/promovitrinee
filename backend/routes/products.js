@@ -15,6 +15,7 @@ router.get('/', async (req, res) => {
       .select(`
         *,
         category:categories(id, name, slug),
+        extra_categories:product_categories(category:categories(id, name, slug, icon)),
         images:product_images(id, url, order),
         coupons:product_coupons(id, code, description, discount, expires_at)
       `, { count: 'exact' })
@@ -22,7 +23,6 @@ router.get('/', async (req, res) => {
       .order('created_at', { ascending: false })
       .range(offset, offset + limit - 1);
 
-    if (category_id) query = query.eq('category_id', category_id);
     if (platform) query = query.eq('platform', platform);
     if (search) query = query.ilike('title', `%${search}%`);
     if (best_seller === 'true') query = query.eq('best_seller', true);
@@ -30,7 +30,16 @@ router.get('/', async (req, res) => {
     const { data, error, count } = await query;
     if (error) throw error;
 
-    res.json({ products: data, total: count, page: Number(page), limit: Number(limit) });
+    // Filtra por categoria na tabela N:N (após busca, para compatibilidade)
+    let products = data || [];
+    if (category_id) {
+      products = products.filter(p =>
+        p.category_id === category_id ||
+        (p.extra_categories || []).some(ec => ec.category?.id === category_id)
+      );
+    }
+
+    res.json({ products, total: category_id ? products.length : count, page: Number(page), limit: Number(limit) });
   } catch (err) {
     res.status(500).json({ error: 'Erro ao buscar produtos' });
   }
@@ -44,6 +53,7 @@ router.get('/:id', async (req, res) => {
       .select(`
         *,
         category:categories(id, name, slug),
+        extra_categories:product_categories(category:categories(id, name, slug, icon)),
         images:product_images(id, url, order),
         coupons:product_coupons(id, code, description, discount, expires_at)
       `)
@@ -69,23 +79,28 @@ router.post('/', authMiddleware, async (req, res) => {
   
   const {
     title, description, original_price, promo_price,
-    affiliate_link, platform, category_id,
+    affiliate_link, platform, category_id, category_ids,
     images, coupons, tags, featured, rating, sales_count, best_seller
   } = req.body;
 
-  if (!title || !affiliate_link || !category_id || !platform) {
-    return res.status(400).json({ error: 'Título, link, categoria e plataforma são obrigatórios' });
+  // Suporta array (novo) ou id único (legado)
+  const allCatIds = Array.isArray(category_ids) && category_ids.length
+    ? category_ids
+    : category_id ? [category_id] : [];
+
+  if (!title || !affiliate_link || !platform || allCatIds.length === 0) {
+    return res.status(400).json({ error: 'Título, link, plataforma e pelo menos uma categoria são obrigatórios' });
   }
 
   try {
-    // Cria o produto
     const { data: product, error } = await supabase
       .from('products')
       .insert([{
         title, description,
         original_price: original_price || null,
         promo_price: promo_price || null,
-        affiliate_link, platform, category_id,
+        affiliate_link, platform,
+        category_id: allCatIds[0],   // mantém coluna legada com a primeira
         tags: tags || [],
         featured: featured || false,
         best_seller: best_seller || false,
@@ -95,6 +110,11 @@ router.post('/', authMiddleware, async (req, res) => {
       .single();
 
     if (error) throw error;
+
+    // Salva todas as categorias na tabela N:N
+    await supabase.from('product_categories').insert(
+      allCatIds.map(cid => ({ product_id: product.id, category_id: cid }))
+    );
 
     // Insere imagens
     if (images?.length > 0) {
@@ -132,19 +152,23 @@ router.put('/:id', authMiddleware, async (req, res) => {
   
   const {
     title, description, original_price, promo_price,
-    affiliate_link, platform, category_id,
+    affiliate_link, platform, category_id, category_ids,
     images, coupons, tags, featured, active, rating, sales_count, best_seller
   } = req.body;
 
+  const allCatIds = Array.isArray(category_ids) && category_ids.length
+    ? category_ids
+    : category_id ? [category_id] : [];
+
   try {
-    // Atualiza o produto
     const { error } = await supabase
       .from('products')
       .update({
         title, description,
         original_price: original_price || null,
         promo_price: promo_price || null,
-        affiliate_link, platform, category_id,
+        affiliate_link, platform,
+        category_id: allCatIds[0] || null,
         tags: tags || [],
         featured, active,
         best_seller: best_seller || false,
@@ -153,6 +177,14 @@ router.put('/:id', authMiddleware, async (req, res) => {
       .eq('id', req.params.id);
 
     if (error) throw error;
+
+    // Recria relações N:N de categorias
+    if (allCatIds.length > 0) {
+      await supabase.from('product_categories').delete().eq('product_id', req.params.id);
+      await supabase.from('product_categories').insert(
+        allCatIds.map(cid => ({ product_id: req.params.id, category_id: cid }))
+      );
+    }
 
     // Recria imagens (apaga antigas e insere novas)
     if (images) {
