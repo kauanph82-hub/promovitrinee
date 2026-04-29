@@ -19,7 +19,8 @@ export default function AdminProductForm() {
   const [form, setForm] = useState({
     title: '', description: '', original_price: '', promo_price: '',
     affiliate_link: '', platform: 'shopee', category_id: '',
-    tags: '', featured: false, best_seller: false, active: true,
+    tags: '', extra_category_slugs: [],
+    featured: false, best_seller: false, active: true,
     rating: '', sales_count: '',
     images: [],
     coupons: [],
@@ -40,7 +41,9 @@ export default function AdminProductForm() {
             affiliate_link: data.affiliate_link || '',
             platform: data.platform || 'shopee',
             category_id: data.category_id || '',
-            tags: (data.tags || []).join(', '),
+            // separa tags normais das tags de categoria extra (prefixo "cat:")
+            tags: (data.tags || []).filter(t => !t.startsWith('cat:')).join(', '),
+            extra_category_slugs: (data.tags || []).filter(t => t.startsWith('cat:')).map(t => t.slice(4)),
             featured: data.featured || false,
             best_seller: data.best_seller || false,
             active: data.active !== false,
@@ -61,6 +64,15 @@ export default function AdminProductForm() {
 
   function set(field, value) {
     setForm(prev => ({ ...prev, [field]: value }));
+  }
+
+  function toggleExtraCategory(slug) {
+    setForm(prev => ({
+      ...prev,
+      extra_category_slugs: prev.extra_category_slugs.includes(slug)
+        ? prev.extra_category_slugs.filter(s => s !== slug)
+        : [...prev.extra_category_slugs, slug],
+    }));
   }
 
   // Upload de imagens
@@ -116,13 +128,16 @@ export default function AdminProductForm() {
     setError('');
     setSaving(true);
 
+    const normalTags = form.tags ? form.tags.split(',').map(t => t.trim()).filter(Boolean) : [];
+    const catTags = form.extra_category_slugs.map(s => `cat:${s}`);
+
     const payload = {
       ...form,
       original_price: form.original_price ? parseFloat(form.original_price) : null,
       promo_price: form.promo_price ? parseFloat(form.promo_price) : null,
       rating: form.rating !== '' ? parseFloat(form.rating) : null,
       sales_count: form.sales_count !== '' ? parseInt(form.sales_count) : null,
-      tags: form.tags ? form.tags.split(',').map(t => t.trim()).filter(Boolean) : [],
+      tags: [...normalTags, ...catTags],
     };
 
     try {
@@ -242,6 +257,41 @@ export default function AdminProductForm() {
               </select>
             </div>
           </div>
+
+          {/* Categorias adicionais */}
+          {categories.length > 0 && (
+            <div>
+              <label className="block text-sm font-medium text-stone-700 mb-2">
+                Categorias adicionais
+                {form.extra_category_slugs.length > 0 && (
+                  <span className="ml-2 text-xs font-normal text-brand-600 bg-brand-50 px-2 py-0.5 rounded-full">
+                    +{form.extra_category_slugs.length}
+                  </span>
+                )}
+              </label>
+              <div className="flex flex-wrap gap-2">
+                {categories
+                  .filter(c => c.id !== form.category_id)
+                  .map(c => {
+                    const checked = form.extra_category_slugs.includes(c.slug);
+                    return (
+                      <button
+                        key={c.id}
+                        type="button"
+                        onClick={() => toggleExtraCategory(c.slug)}
+                        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm border transition-colors
+                          ${checked
+                            ? 'bg-brand-500 border-brand-500 text-white font-medium'
+                            : 'bg-white border-stone-200 text-stone-600 hover:border-brand-400'}`}
+                      >
+                        {c.icon} {c.name}
+                      </button>
+                    );
+                  })}
+              </div>
+              <p className="text-xs text-stone-400 mt-1.5">O produto aparecerá em todas as categorias selecionadas</p>
+            </div>
+          )}
 
           <div>
             <label className="block text-sm font-medium text-stone-700 mb-1.5">Tags (separadas por vírgula)</label>

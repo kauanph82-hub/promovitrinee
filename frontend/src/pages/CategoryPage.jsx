@@ -21,12 +21,17 @@ export default function CategoryPage() {
       const cat = data.find(c => c.slug === slug);
       setCategory(cat || null);
       if (cat) {
-        api.get('/products', { params: { category_id: cat.id, limit: 24, page: 1 } })
-          .then(({ data: pd }) => {
-            setProducts(pd.products);
-            setTotal(pd.total);
-          })
-          .finally(() => setLoading(false));
+        // Busca produtos pela categoria principal E por tag de categoria extra
+        Promise.all([
+          api.get('/products', { params: { category_id: cat.id, limit: 100, page: 1 } }),
+          api.get('/products', { params: { search: `cat:${cat.slug}`, limit: 100, page: 1 } }),
+        ]).then(([byId, byTag]) => {
+          const all = [...(byId.data.products || []), ...(byTag.data.products || [])];
+          // Remove duplicatas pelo id
+          const unique = all.filter((p, i, arr) => arr.findIndex(x => x.id === p.id) === i);
+          setProducts(unique);
+          setTotal(unique.length);
+        }).finally(() => setLoading(false));
       } else {
         setLoading(false);
       }
