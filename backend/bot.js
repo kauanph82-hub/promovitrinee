@@ -102,8 +102,8 @@ bot.on('photo', async (ctx) => {
 
   console.log('\n📸 ===== FOTO RECEBIDA (OCR) =====');
 
-  if (!GOOGLE_VISION_CREDENTIALS) {
-    return ctx.reply('❌ Google Vision não configurado. Use /p com o link na legenda.');
+  if (!OCR_SPACE_KEY) {
+    return ctx.reply('❌ OCR não configurado. Use /p com o link na legenda.');
   }
 
   await ctx.reply('⏳ Lendo a print com OCR...');
