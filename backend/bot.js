@@ -23,7 +23,7 @@ async function getGoogleAccessToken() {
   const payload = Buffer.from(JSON.stringify({
     iss: creds.client_email,
     scope: 'https://www.googleapis.com/auth/cloud-vision',
-    aud: creds.token_uri,
+    aud: 'https://oauth2.googleapis.com/token',
     exp: now + 3600,
     iat: now,
   })).toString('base64url');
@@ -34,10 +34,16 @@ async function getGoogleAccessToken() {
   const signature = sign.sign(creds.private_key, 'base64url');
   const jwt = `${header}.${payload}.${signature}`;
 
-  const { data } = await axios.post(creds.token_uri, new URLSearchParams({
-    grant_type: 'urn:ietf:params:oauth:grant-type:jwt-bearer',
-    assertion: jwt,
-  }));
+  console.log('🔑 Obtendo token Google...');
+  const { data } = await axios.post(
+    'https://oauth2.googleapis.com/token',
+    new URLSearchParams({
+      grant_type: 'urn:ietf:params:oauth:grant-type:jwt-bearer',
+      assertion: jwt,
+    }),
+    { headers: { 'Content-Type': 'application/x-www-form-urlencoded' } }
+  );
+  console.log('✅ Token obtido!');
   return data.access_token;
 }
 
