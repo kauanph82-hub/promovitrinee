@@ -59,6 +59,9 @@ async function extractTextFromImage(imageBuffer) {
 
   const text = data.responses?.[0]?.fullTextAnnotation?.text || '';
   console.log('📝 Texto extraído pelo OCR:\n', text);
+  if (data.responses?.[0]?.error) {
+    console.error('❌ Erro Google Vision:', JSON.stringify(data.responses[0].error));
+  }
   return text;
 }
 
@@ -191,7 +194,8 @@ bot.on('photo', async (ctx) => {
 
   } catch (err) {
     console.error('💥 Erro no OCR:', err.message);
-    ctx.reply('❌ Erro ao processar a print: ' + err.message);
+    console.error('💥 Detalhes:', err.response?.data ? JSON.stringify(err.response.data) : 'sem detalhes');
+    ctx.reply('❌ Erro ao processar a print: ' + err.message + (err.response?.data?.error?.message ? '\n' + err.response.data.error.message : ''));
   }
 });
 
