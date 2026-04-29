@@ -15,6 +15,7 @@ router.get('/', async (req, res) => {
       .select(`
         *,
         category:categories(id, name, slug),
+        extra_categories:product_categories(category:categories(id, name, slug, icon)),
         images:product_images(id, url, order),
         coupons:product_coupons(id, code, description, discount, expires_at)
       `, { count: 'exact' })
@@ -29,25 +30,13 @@ router.get('/', async (req, res) => {
     const { data, error, count } = await query;
     if (error) throw error;
 
+    // Filtra por categoria na tabela N:N (após busca, para compatibilidade)
     let products = data || [];
-
-    // Filtra por categoria: tenta tabela N:N, cai no legado se não existir
     if (category_id) {
-      try {
-        const { data: pcData } = await supabase
-          .from('product_categories')
-          .select('product_id')
-          .eq('category_id', category_id);
-
-        if (pcData && pcData.length > 0) {
-          const ids = new Set(pcData.map(r => r.product_id));
-          products = products.filter(p => ids.has(p.id) || p.category_id === category_id);
-        } else {
-          products = products.filter(p => p.category_id === category_id);
-        }
-      } catch {
-        products = products.filter(p => p.category_id === category_id);
-      }
+      products = products.filter(p =>
+        p.category_id === category_id ||
+        (p.extra_categories || []).some(ec => ec.category?.id === category_id)
+      );
     }
 
     res.json({ products, total: category_id ? products.length : count, page: Number(page), limit: Number(limit) });
@@ -64,6 +53,7 @@ router.get('/:id', async (req, res) => {
       .select(`
         *,
         category:categories(id, name, slug),
+        extra_categories:product_categories(category:categories(id, name, slug, icon)),
         images:product_images(id, url, order),
         coupons:product_coupons(id, code, description, discount, expires_at)
       `)
@@ -73,18 +63,8 @@ router.get('/:id', async (req, res) => {
 
     if (error || !data) return res.status(404).json({ error: 'Produto não encontrado' });
 
+    // Ordena imagens pelo campo order
     data.images?.sort((a, b) => a.order - b.order);
-
-    // Busca categorias extras da tabela N:N (se existir)
-    try {
-      const { data: pcData } = await supabase
-        .from('product_categories')
-        .select('category:categories(id, name, slug, icon)')
-        .eq('product_id', req.params.id);
-      data.extra_categories = (pcData || []).map(r => r.category).filter(Boolean);
-    } catch {
-      data.extra_categories = data.category_id ? [data.category] : [];
-    }
 
     res.json(data);
   } catch (err) {
@@ -131,12 +111,10 @@ router.post('/', authMiddleware, async (req, res) => {
 
     if (error) throw error;
 
-    // Salva todas as categorias na tabela N:N (se existir)
-    try {
-      await supabase.from('product_categories').insert(
-        allCatIds.map(cid => ({ product_id: product.id, category_id: cid }))
-      );
-    } catch { /* tabela ainda não criada, ignora */ }
+    // Salva todas as categorias na tabela N:N
+    await supabase.from('product_categories').insert(
+      allCatIds.map(cid => ({ product_id: product.id, category_id: cid }))
+    );
 
     // Insere imagens
     if (images?.length > 0) {
@@ -200,14 +178,12 @@ router.put('/:id', authMiddleware, async (req, res) => {
 
     if (error) throw error;
 
-    // Recria relações N:N de categorias (se tabela existir)
+    // Recria relações N:N de categorias
     if (allCatIds.length > 0) {
-      try {
-        await supabase.from('product_categories').delete().eq('product_id', req.params.id);
-        await supabase.from('product_categories').insert(
-          allCatIds.map(cid => ({ product_id: req.params.id, category_id: cid }))
-        );
-      } catch { /* tabela ainda não criada, ignora */ }
+      await supabase.from('product_categories').delete().eq('product_id', req.params.id);
+      await supabase.from('product_categories').insert(
+        allCatIds.map(cid => ({ product_id: req.params.id, category_id: cid }))
+      );
     }
 
     // Recria imagens (apaga antigas e insere novas)

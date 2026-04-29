@@ -26,7 +26,7 @@ export default function AdminProductForm() {
   });
 
   useEffect(() => {
-    api.get('/categories').then(({ data }) => setCategories(Array.isArray(data) ? data : [])).catch(() => setCategories([]));
+    api.get('/categories').then(({ data }) => setCategories(data));
 
     if (isEdit) {
       setLoading(true);
