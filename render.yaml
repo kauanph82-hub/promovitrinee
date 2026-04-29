@@ -25,3 +25,5 @@ services:
         sync: false
       - key: GOOGLE_VISION_CREDENTIALS
         sync: false
+      - key: OCR_SPACE_KEY
+        sync: false

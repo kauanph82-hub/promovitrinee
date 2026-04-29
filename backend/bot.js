@@ -10,64 +10,38 @@ console.log('📦 Carregando bot.js...');
 const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
 const ADMIN_CHAT_ID = process.env.ADMIN_CHAT_ID;
 const GOOGLE_VISION_CREDENTIALS = process.env.GOOGLE_VISION_CREDENTIALS;
+const OCR_SPACE_KEY = process.env.OCR_SPACE_KEY || 'K84713721288957';
 
 console.log('🔑 Token do bot (últimos 3 chars):', BOT_TOKEN ? BOT_TOKEN.slice(-3) : '❌ NÃO ENCONTRADO');
 console.log('🔧 Admin ID:', ADMIN_CHAT_ID);
-console.log('👁️ Google Vision:', GOOGLE_VISION_CREDENTIALS ? 'Configurado ✅' : '❌ NÃO CONFIGURADO');
+console.log('👁️ OCR.space:', OCR_SPACE_KEY ? 'Configurado ✅' : '❌ NÃO CONFIGURADO');
 
 const bot = new Telegraf(BOT_TOKEN);
-async function getGoogleAccessToken() {
-  const creds = JSON.parse(GOOGLE_VISION_CREDENTIALS);
-  const now = Math.floor(Date.now() / 1000);
-  const header = Buffer.from(JSON.stringify({ alg: 'RS256', typ: 'JWT' })).toString('base64url');
-  const payload = Buffer.from(JSON.stringify({
-    iss: creds.client_email,
-    scope: 'https://www.googleapis.com/auth/cloud-vision',
-    aud: 'https://oauth2.googleapis.com/token',
-    exp: now + 3600,
-    iat: now,
-  })).toString('base64url');
 
-  const crypto = require('crypto');
-  const sign = crypto.createSign('RSA-SHA256');
-  sign.update(`${header}.${payload}`);
-  const signature = sign.sign(creds.private_key, 'base64url');
-  const jwt = `${header}.${payload}.${signature}`;
-
-  console.log('🔑 Obtendo token Google...');
-  const { data } = await axios.post(
-    'https://oauth2.googleapis.com/token',
-    new URLSearchParams({
-      grant_type: 'urn:ietf:params:oauth:grant-type:jwt-bearer',
-      assertion: jwt,
-    }),
-    { headers: { 'Content-Type': 'application/x-www-form-urlencoded' } }
-  );
-  console.log('✅ Token obtido!');
-  return data.access_token;
-}
-
+// ========== OCR.SPACE ==========
 async function extractTextFromImage(imageBuffer) {
-  console.log('👁️ Enviando imagem para Google Vision OCR...');
-  const base64 = imageBuffer.toString('base64');
-  const token = await getGoogleAccessToken();
+  console.log('👁️ Enviando imagem para OCR.space...');
 
-  const { data } = await axios.post(
-    'https://vision.googleapis.com/v1/images:annotate',
-    {
-      requests: [{
-        image: { content: base64 },
-        features: [{ type: 'TEXT_DETECTION', maxResults: 1 }],
-      }],
-    },
-    { headers: { Authorization: `Bearer ${token}` } }
-  );
+  const FormData = require('form-data');
+  const form = new FormData();
+  form.append('apikey', OCR_SPACE_KEY);
+  form.append('language', 'por');
+  form.append('isOverlayRequired', 'false');
+  form.append('file', imageBuffer, { filename: 'image.jpg', contentType: 'image/jpeg' });
 
-  const text = data.responses?.[0]?.fullTextAnnotation?.text || '';
-  console.log('📝 Texto extraído pelo OCR:\n', text);
-  if (data.responses?.[0]?.error) {
-    console.error('❌ Erro Google Vision:', JSON.stringify(data.responses[0].error));
+  const { data } = await axios.post('https://api.ocr.space/parse/image', form, {
+    headers: form.getHeaders(),
+    timeout: 30000,
+  });
+
+  console.log('📊 Resposta OCR.space:', JSON.stringify(data).slice(0, 300));
+
+  if (data.IsErroredOnProcessing) {
+    throw new Error('OCR.space erro: ' + data.ErrorMessage);
   }
+
+  const text = data.ParsedResults?.[0]?.ParsedText || '';
+  console.log('📝 Texto extraído:\n', text);
   return text;
 }
 
