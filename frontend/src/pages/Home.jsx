@@ -51,6 +51,8 @@ export default function Home() {
   const search = searchParams.get('busca') || '';
   const LIMIT = 24;
 
+  const [bestSellers, setBestSellers] = useState([]);
+
   const loadCategories = useCallback(async () => {
     try {
       const cached = sessionStorage.getItem('categories');
@@ -81,6 +83,13 @@ export default function Home() {
 
   useEffect(() => { loadCategories(); }, [loadCategories]);
   useEffect(() => { loadProducts(1); }, [loadProducts]);
+
+  // Carrega mais vendidos da semana
+  useEffect(() => {
+    api.get('/products', { params: { best_seller: 'true', limit: 10 } })
+      .then(({ data }) => setBestSellers(Array.isArray(data?.products) ? data.products : []))
+      .catch(() => {});
+  }, []);
 
   // Acorda o servidor se estiver dormindo
   useEffect(() => {
@@ -270,6 +279,44 @@ export default function Home() {
                         ? <img src={img} alt={p.title} className="w-[140px] h-[140px] object-cover rounded-xl" />
                         : <div className="w-[140px] h-[140px] bg-gray-100 rounded-xl flex items-center justify-center text-3xl">🛍️</div>
                       }
+                    </div>
+                    <p className="text-sm text-gray-700 line-clamp-2 min-h-10">{p.title}</p>
+                    <div className="flex items-baseline gap-1 flex-wrap">
+                      {disc && <span className="text-xs text-gray-400 line-through">{formatPrice(p.original_price)}</span>}
+                      <span className="text-lg font-bold text-gray-800">
+                        {p.promo_price > 0 ? formatPrice(p.promo_price) : p.original_price > 0 ? formatPrice(p.original_price) : 'Ver preço'}
+                      </span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* ── MAIS VENDIDOS DA SEMANA ── */}
+        {bestSellers.length > 0 && (
+          <div className="mt-8">
+            <p className="text-gray-800 text-xl font-bold mb-4">🔥 Mais vendidos da semana</p>
+            <div className="flex gap-4 overflow-x-auto pb-3 scrollbar-none -mx-1 px-1">
+              {bestSellers.map(p => {
+                const plat = getPlatform(p.platform);
+                const img = p.images?.[0]?.url;
+                const disc = calcDiscount(p.original_price, p.promo_price);
+                return (
+                  <div key={p.id} onClick={() => setSelected(p)}
+                    className="shrink-0 w-[200px] bg-white border border-gray-200 rounded-2xl p-5 cursor-pointer hover:shadow-md transition-shadow flex flex-col gap-2">
+                    <div className="flex items-center gap-1 text-xs text-gray-500 truncate">
+                      {plat.img && <img src={plat.img} alt={plat.label} className="w-4 h-4 rounded object-cover" />}
+                      <span>{plat.domain || plat.label}</span>
+                      <span className="text-[#00AAB5]">✓</span>
+                    </div>
+                    <div className="relative flex justify-center">
+                      {img
+                        ? <img src={img} alt={p.title} className="w-[140px] h-[140px] object-cover rounded-xl" />
+                        : <div className="w-[140px] h-[140px] bg-gray-100 rounded-xl flex items-center justify-center text-3xl">🛍️</div>
+                      }
+                      {disc && <div className="absolute top-1 left-1 bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-lg">-{disc}%</div>}
                     </div>
                     <p className="text-sm text-gray-700 line-clamp-2 min-h-10">{p.title}</p>
                     <div className="flex items-baseline gap-1 flex-wrap">

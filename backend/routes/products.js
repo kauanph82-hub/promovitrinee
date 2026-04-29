@@ -6,7 +6,7 @@ const router = express.Router();
 
 // GET /api/products — lista todos os produtos (público)
 router.get('/', async (req, res) => {
-  const { category_id, platform, search, page = 1, limit = 24 } = req.query;
+  const { category_id, platform, search, page = 1, limit = 24, best_seller } = req.query;
   const offset = (page - 1) * limit;
 
   try {
@@ -25,6 +25,7 @@ router.get('/', async (req, res) => {
     if (category_id) query = query.eq('category_id', category_id);
     if (platform) query = query.eq('platform', platform);
     if (search) query = query.ilike('title', `%${search}%`);
+    if (best_seller === 'true') query = query.eq('best_seller', true);
 
     const { data, error, count } = await query;
     if (error) throw error;
@@ -69,7 +70,7 @@ router.post('/', authMiddleware, async (req, res) => {
   const {
     title, description, original_price, promo_price,
     affiliate_link, platform, category_id,
-    images, coupons, tags, featured
+    images, coupons, tags, featured, rating, sales_count, best_seller
   } = req.body;
 
   if (!title || !affiliate_link || !category_id || !platform) {
@@ -87,6 +88,7 @@ router.post('/', authMiddleware, async (req, res) => {
         affiliate_link, platform, category_id,
         tags: tags || [],
         featured: featured || false,
+        best_seller: best_seller || false,
         active: true
       }])
       .select()
@@ -131,7 +133,7 @@ router.put('/:id', authMiddleware, async (req, res) => {
   const {
     title, description, original_price, promo_price,
     affiliate_link, platform, category_id,
-    images, coupons, tags, featured, active
+    images, coupons, tags, featured, active, rating, sales_count, best_seller
   } = req.body;
 
   try {
@@ -145,6 +147,7 @@ router.put('/:id', authMiddleware, async (req, res) => {
         affiliate_link, platform, category_id,
         tags: tags || [],
         featured, active,
+        best_seller: best_seller || false,
         updated_at: new Date()
       })
       .eq('id', req.params.id);

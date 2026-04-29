@@ -19,7 +19,7 @@ export default function AdminProductForm() {
   const [form, setForm] = useState({
     title: '', description: '', original_price: '', promo_price: '',
     affiliate_link: '', platform: 'shopee', category_id: '',
-    tags: '', featured: false, active: true,
+    tags: '', featured: false, best_seller: false, active: true,
     rating: '', sales_count: '',
     images: [],
     coupons: [],
@@ -42,6 +42,7 @@ export default function AdminProductForm() {
             category_id: data.category_id || '',
             tags: (data.tags || []).join(', '),
             featured: data.featured || false,
+            best_seller: data.best_seller || false,
             active: data.active !== false,
             rating: data.rating || '',
             sales_count: data.sales_count || '',
@@ -248,11 +249,16 @@ export default function AdminProductForm() {
               placeholder="promoção, lançamento, exclusivo, frete grátis" />
           </div>
 
-          <div className="flex items-center gap-6">
+          <div className="flex items-center gap-6 flex-wrap">
             <label className="flex items-center gap-2 cursor-pointer select-none">
               <input type="checkbox" checked={form.featured} onChange={e => set('featured', e.target.checked)}
                 className="w-4 h-4 accent-brand-500" />
               <span className="text-sm font-medium text-stone-700">⭐ Produto em destaque</span>
+            </label>
+            <label className="flex items-center gap-2 cursor-pointer select-none">
+              <input type="checkbox" checked={form.best_seller} onChange={e => set('best_seller', e.target.checked)}
+                className="w-4 h-4 accent-brand-500" />
+              <span className="text-sm font-medium text-stone-700">🔥 Mais vendido da semana</span>
             </label>
             <label className="flex items-center gap-2 cursor-pointer select-none">
               <input type="checkbox" checked={form.active} onChange={e => set('active', e.target.checked)}
