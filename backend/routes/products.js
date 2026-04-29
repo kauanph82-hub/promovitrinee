@@ -6,7 +6,7 @@ const router = express.Router();
 
 // GET /api/products — lista todos os produtos (público)
 router.get('/', async (req, res) => {
-  const { category_id, platform, search, page = 1, limit = 24, best_seller } = req.query;
+  const { category_id, platform, search, tag, page = 1, limit = 24, best_seller } = req.query;
   const offset = (page - 1) * limit;
 
   try {
@@ -25,6 +25,7 @@ router.get('/', async (req, res) => {
     if (category_id) query = query.eq('category_id', category_id);
     if (platform) query = query.eq('platform', platform);
     if (search) query = query.ilike('title', `%${search}%`);
+    if (tag) query = query.contains('tags', [tag]);
     if (best_seller === 'true') query = query.eq('best_seller', true);
 
     const { data, error, count } = await query;

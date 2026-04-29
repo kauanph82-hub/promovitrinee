@@ -24,7 +24,7 @@ export default function CategoryPage() {
         // Busca produtos pela categoria principal E por tag de categoria extra
         Promise.all([
           api.get('/products', { params: { category_id: cat.id, limit: 100, page: 1 } }),
-          api.get('/products', { params: { search: `cat:${cat.slug}`, limit: 100, page: 1 } }),
+          api.get('/products', { params: { tag: `cat:${cat.slug}`, limit: 100, page: 1 } }),
         ]).then(([byId, byTag]) => {
           const all = [...(byId.data.products || []), ...(byTag.data.products || [])];
           // Remove duplicatas pelo id
