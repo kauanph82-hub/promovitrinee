@@ -15,7 +15,6 @@ router.get('/', async (req, res) => {
       .select(`
         *,
         category:categories(id, name, slug),
-        categories:product_categories(category:categories(id, name, slug, icon)),
         images:product_images(id, url, order),
         coupons:product_coupons(id, code, description, discount, expires_at)
       `, { count: 'exact' })
@@ -23,10 +22,7 @@ router.get('/', async (req, res) => {
       .order('created_at', { ascending: false })
       .range(offset, offset + limit - 1);
 
-    // Filtra por categoria: busca tanto na coluna legada quanto na tabela N:N
-    if (category_id) {
-      query = query.or(`category_id.eq.${category_id},product_categories.category_id.eq.${category_id}`);
-    }
+    if (category_id) query = query.eq('category_id', category_id);
     if (platform) query = query.eq('platform', platform);
     if (search) query = query.ilike('title', `%${search}%`);
     if (best_seller === 'true') query = query.eq('best_seller', true);
@@ -34,15 +30,8 @@ router.get('/', async (req, res) => {
     const { data, error, count } = await query;
     if (error) throw error;
 
-    // Normaliza: garante que cada produto tenha array de categorias
-    const products = (data || []).map(p => ({
-      ...p,
-      categories: (p.categories || []).map(pc => pc.category).filter(Boolean),
-    }));
-
-    res.json({ products, total: count, page: Number(page), limit: Number(limit) });
+    res.json({ products: data, total: count, page: Number(page), limit: Number(limit) });
   } catch (err) {
-    console.error('Erro ao buscar produtos:', err);
     res.status(500).json({ error: 'Erro ao buscar produtos' });
   }
 });
@@ -55,7 +44,6 @@ router.get('/:id', async (req, res) => {
       .select(`
         *,
         category:categories(id, name, slug),
-        categories:product_categories(category:categories(id, name, slug, icon)),
         images:product_images(id, url, order),
         coupons:product_coupons(id, code, description, discount, expires_at)
       `)
@@ -67,9 +55,6 @@ router.get('/:id', async (req, res) => {
 
     // Ordena imagens pelo campo order
     data.images?.sort((a, b) => a.order - b.order);
-
-    // Normaliza categorias
-    data.categories = (data.categories || []).map(pc => pc.category).filter(Boolean);
 
     res.json(data);
   } catch (err) {
@@ -84,33 +69,23 @@ router.post('/', authMiddleware, async (req, res) => {
   
   const {
     title, description, original_price, promo_price,
-    affiliate_link, platform, category_id, category_ids,
+    affiliate_link, platform, category_id,
     images, coupons, tags, featured, rating, sales_count, best_seller
   } = req.body;
 
-  if (!title || !affiliate_link || !platform) {
-    return res.status(400).json({ error: 'Título, link e plataforma são obrigatórios' });
-  }
-
-  // Monta lista de categorias: usa category_ids (array) ou category_id (legado)
-  const allCategoryIds = category_ids?.length
-    ? category_ids
-    : category_id ? [category_id] : [];
-
-  if (allCategoryIds.length === 0) {
-    return res.status(400).json({ error: 'Selecione pelo menos uma categoria' });
+  if (!title || !affiliate_link || !category_id || !platform) {
+    return res.status(400).json({ error: 'Título, link, categoria e plataforma são obrigatórios' });
   }
 
   try {
-    // Cria o produto (mantém category_id com a primeira categoria para compatibilidade)
+    // Cria o produto
     const { data: product, error } = await supabase
       .from('products')
       .insert([{
         title, description,
         original_price: original_price || null,
         promo_price: promo_price || null,
-        affiliate_link, platform,
-        category_id: allCategoryIds[0],
+        affiliate_link, platform, category_id,
         tags: tags || [],
         featured: featured || false,
         best_seller: best_seller || false,
@@ -120,10 +95,6 @@ router.post('/', authMiddleware, async (req, res) => {
       .single();
 
     if (error) throw error;
-
-    // Insere relações N:N de categorias
-    const catRows = allCategoryIds.map(cid => ({ product_id: product.id, category_id: cid }));
-    await supabase.from('product_categories').insert(catRows);
 
     // Insere imagens
     if (images?.length > 0) {
@@ -161,14 +132,9 @@ router.put('/:id', authMiddleware, async (req, res) => {
   
   const {
     title, description, original_price, promo_price,
-    affiliate_link, platform, category_id, category_ids,
+    affiliate_link, platform, category_id,
     images, coupons, tags, featured, active, rating, sales_count, best_seller
   } = req.body;
-
-  // Monta lista de categorias
-  const allCategoryIds = category_ids?.length
-    ? category_ids
-    : category_id ? [category_id] : [];
 
   try {
     // Atualiza o produto
@@ -178,8 +144,7 @@ router.put('/:id', authMiddleware, async (req, res) => {
         title, description,
         original_price: original_price || null,
         promo_price: promo_price || null,
-        affiliate_link, platform,
-        category_id: allCategoryIds[0] || null,
+        affiliate_link, platform, category_id,
         tags: tags || [],
         featured, active,
         best_seller: best_seller || false,
@@ -188,13 +153,6 @@ router.put('/:id', authMiddleware, async (req, res) => {
       .eq('id', req.params.id);
 
     if (error) throw error;
-
-    // Recria relações N:N de categorias
-    if (allCategoryIds.length > 0) {
-      await supabase.from('product_categories').delete().eq('product_id', req.params.id);
-      const catRows = allCategoryIds.map(cid => ({ product_id: req.params.id, category_id: cid }));
-      await supabase.from('product_categories').insert(catRows);
-    }
 
     // Recria imagens (apaga antigas e insere novas)
     if (images) {

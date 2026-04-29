@@ -18,7 +18,7 @@ export default function AdminProductForm() {
 
   const [form, setForm] = useState({
     title: '', description: '', original_price: '', promo_price: '',
-    affiliate_link: '', platform: 'shopee', category_ids: [],
+    affiliate_link: '', platform: 'shopee', category_id: '',
     tags: '', featured: false, best_seller: false, active: true,
     rating: '', sales_count: '',
     images: [],
@@ -32,11 +32,6 @@ export default function AdminProductForm() {
       setLoading(true);
       api.get(`/products/${id}`)
         .then(({ data }) => {
-          // Monta lista de IDs de categorias (nova tabela N:N ou legado)
-          const catIds = data.categories?.length
-            ? data.categories.map(c => c.id)
-            : data.category_id ? [data.category_id] : [];
-
           setForm({
             title: data.title || '',
             description: data.description || '',
@@ -44,7 +39,7 @@ export default function AdminProductForm() {
             promo_price: data.promo_price || '',
             affiliate_link: data.affiliate_link || '',
             platform: data.platform || 'shopee',
-            category_ids: catIds,
+            category_id: data.category_id || '',
             tags: (data.tags || []).join(', '),
             featured: data.featured || false,
             best_seller: data.best_seller || false,
@@ -66,18 +61,6 @@ export default function AdminProductForm() {
 
   function set(field, value) {
     setForm(prev => ({ ...prev, [field]: value }));
-  }
-
-  function toggleCategory(id) {
-    setForm(prev => {
-      const exists = prev.category_ids.includes(id);
-      return {
-        ...prev,
-        category_ids: exists
-          ? prev.category_ids.filter(c => c !== id)
-          : [...prev.category_ids, id],
-      };
-    });
   }
 
   // Upload de imagens
@@ -135,7 +118,6 @@ export default function AdminProductForm() {
 
     const payload = {
       ...form,
-      category_ids: form.category_ids,
       original_price: form.original_price ? parseFloat(form.original_price) : null,
       promo_price: form.promo_price ? parseFloat(form.promo_price) : null,
       rating: form.rating !== '' ? parseFloat(form.rating) : null,
@@ -250,39 +232,15 @@ export default function AdminProductForm() {
                 ))}
               </select>
             </div>
-          </div>
-
-          {/* Categorias — múltipla seleção */}
-          <div>
-            <label className="block text-sm font-medium text-stone-700 mb-2">
-              Categorias *
-              {form.category_ids.length > 0 && (
-                <span className="ml-2 text-xs font-normal text-brand-600 bg-brand-50 px-2 py-0.5 rounded-full">
-                  {form.category_ids.length} selecionada{form.category_ids.length > 1 ? 's' : ''}
-                </span>
-              )}
-            </label>
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 max-h-52 overflow-y-auto border border-stone-200 rounded-xl p-3 bg-stone-50">
-              {categories.map(c => {
-                const checked = form.category_ids.includes(c.id);
-                return (
-                  <label key={c.id}
-                    className={`flex items-center gap-2 px-3 py-2 rounded-lg cursor-pointer transition-colors text-sm select-none
-                      ${checked ? 'bg-brand-100 border border-brand-400 text-brand-700 font-medium' : 'bg-white border border-stone-200 text-stone-600 hover:border-brand-300'}`}>
-                    <input
-                      type="checkbox"
-                      checked={checked}
-                      onChange={() => toggleCategory(c.id)}
-                      className="accent-brand-500 w-3.5 h-3.5 shrink-0"
-                    />
-                    <span className="truncate">{c.icon} {c.name}</span>
-                  </label>
-                );
-              })}
+            <div>
+              <label className="block text-sm font-medium text-stone-700 mb-1.5">Categoria *</label>
+              <select className="input" value={form.category_id} onChange={e => set('category_id', e.target.value)} required>
+                <option value="">Selecionar...</option>
+                {categories.map(c => (
+                  <option key={c.id} value={c.id}>{c.icon} {c.name}</option>
+                ))}
+              </select>
             </div>
-            {form.category_ids.length === 0 && (
-              <p className="text-xs text-red-500 mt-1">Selecione pelo menos uma categoria</p>
-            )}
           </div>
 
           <div>
