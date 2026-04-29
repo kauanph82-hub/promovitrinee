@@ -7,14 +7,85 @@ const supabase = require('./config/supabase');
 
 console.log('📦 Carregando bot.js...');
 
-// USA APENAS O TOKEN DO .ENV
 const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
 const ADMIN_CHAT_ID = process.env.ADMIN_CHAT_ID;
+const GOOGLE_VISION_CREDENTIALS = process.env.GOOGLE_VISION_CREDENTIALS;
 
 console.log('🔑 Token do bot (últimos 3 chars):', BOT_TOKEN ? BOT_TOKEN.slice(-3) : '❌ NÃO ENCONTRADO');
 console.log('🔧 Admin ID:', ADMIN_CHAT_ID);
+console.log('👁️ Google Vision:', GOOGLE_VISION_CREDENTIALS ? 'Configurado ✅' : '❌ NÃO CONFIGURADO');
 
 const bot = new Telegraf(BOT_TOKEN);
+async function getGoogleAccessToken() {
+  const creds = JSON.parse(GOOGLE_VISION_CREDENTIALS);
+  const now = Math.floor(Date.now() / 1000);
+  const header = Buffer.from(JSON.stringify({ alg: 'RS256', typ: 'JWT' })).toString('base64url');
+  const payload = Buffer.from(JSON.stringify({
+    iss: creds.client_email,
+    scope: 'https://www.googleapis.com/auth/cloud-vision',
+    aud: creds.token_uri,
+    exp: now + 3600,
+    iat: now,
+  })).toString('base64url');
+
+  const crypto = require('crypto');
+  const sign = crypto.createSign('RSA-SHA256');
+  sign.update(`${header}.${payload}`);
+  const signature = sign.sign(creds.private_key, 'base64url');
+  const jwt = `${header}.${payload}.${signature}`;
+
+  const { data } = await axios.post(creds.token_uri, new URLSearchParams({
+    grant_type: 'urn:ietf:params:oauth:grant-type:jwt-bearer',
+    assertion: jwt,
+  }));
+  return data.access_token;
+}
+
+async function extractTextFromImage(imageBuffer) {
+  console.log('👁️ Enviando imagem para Google Vision OCR...');
+  const base64 = imageBuffer.toString('base64');
+  const token = await getGoogleAccessToken();
+
+  const { data } = await axios.post(
+    'https://vision.googleapis.com/v1/images:annotate',
+    {
+      requests: [{
+        image: { content: base64 },
+        features: [{ type: 'TEXT_DETECTION', maxResults: 1 }],
+      }],
+    },
+    { headers: { Authorization: `Bearer ${token}` } }
+  );
+
+  const text = data.responses?.[0]?.fullTextAnnotation?.text || '';
+  console.log('📝 Texto extraído pelo OCR:\n', text);
+  return text;
+}
+
+function parseOcrText(text) {
+  const lines = text.split('\n').map(l => l.trim()).filter(Boolean);
+
+  // Extrai link da Shopee
+  const linkMatch = text.match(/(https?:\/\/[^\s]+(?:shopee|shp\.ee|s\.shopee)[^\s]*)/i);
+  const link = linkMatch ? linkMatch[1] : null;
+
+  // Extrai preço (ex: R$ 49,90 ou 49.90)
+  const priceMatch = text.match(/R?\$?\s*(\d{1,4}[.,]\d{2})/i);
+  let price = 0;
+  if (priceMatch) {
+    price = parseFloat(priceMatch[1].replace(',', '.'));
+  }
+
+  // Título: primeira linha longa que não seja preço nem link
+  const title = lines.find(l =>
+    l.length > 10 &&
+    !l.match(/https?:\/\//) &&
+    !l.match(/R?\$?\s*\d+[.,]\d{2}/) &&
+    !l.match(/^\d+$/)
+  ) || 'Produto Shopee';
+
+  return { link, price, title };
+}
 
 // ========== COMANDO /START ==========
 bot.start((ctx) => {
@@ -23,6 +94,8 @@ bot.start((ctx) => {
   
   ctx.reply(
     '🔥 <b>Opa! Bot da PromoVitrine ativo!</b>\n\n' +
+    '<b>MODO PRINT (NOVO!):</b>\n' +
+    'Envie uma print do produto com o link na legenda e eu leio tudo automaticamente!\n\n' +
     '<b>MODO AUTOMÁTICO:</b>\n' +
     'Envie um link da Shopee e eu extraio tudo automaticamente.\n\n' +
     '<b>MODO MANUAL (comando /p):</b>\n' +
@@ -31,16 +104,95 @@ bot.start((ctx) => {
     '• <code>/p https://shopee.com.br/produto 49.90</code>\n' +
     '• <code>/p https://shopee.com.br/produto</code>\n' +
     '• Com foto: Envie a foto com a legenda acima\n\n' +
-    '<b>Regras:</b>\n' +
-    '• Link obrigatório (shopee.com.br, shp.ee, s.shopee)\n' +
-    '• Preço e descrição são opcionais\n' +
-    '• O bot entende qualquer ordem!\n\n' +
     'Aceito links:\n' +
     '• shopee.com.br\n' +
     '• s.shopee.com.br (encurtado)\n' +
     '• shp.ee (encurtado)',
     { parse_mode: 'HTML' }
   );
+});
+
+// ========== HANDLER DE FOTO SEM COMANDO (OCR) ==========
+bot.on('photo', async (ctx) => {
+  // Se tiver legenda com /p, deixa o comando /p tratar
+  if (ctx.message.caption?.startsWith('/p')) return;
+
+  console.log('\n📸 ===== FOTO RECEBIDA (OCR) =====');
+
+  if (!GOOGLE_VISION_CREDENTIALS) {
+    return ctx.reply('❌ Google Vision não configurado. Use /p com o link na legenda.');
+  }
+
+  await ctx.reply('⏳ Lendo a print com OCR...');
+
+  try {
+    // Baixa a foto do Telegram
+    const photo = ctx.message.photo[ctx.message.photo.length - 1];
+    const fileLink = await ctx.telegram.getFileLink(photo.file_id);
+    const { data: imageBuffer } = await axios.get(fileLink.href, { responseType: 'arraybuffer' });
+
+    // OCR via Google Vision
+    const ocrText = await extractTextFromImage(Buffer.from(imageBuffer));
+    if (!ocrText) {
+      return ctx.reply('❌ Não consegui ler texto na imagem. Tente usar /p com o link na legenda.');
+    }
+
+    // Extrai link da legenda (prioritário) ou do OCR
+    const caption = ctx.message.caption || '';
+    const captionLink = caption.match(/(https?:\/\/[^\s]+)/i)?.[1];
+    const parsed = parseOcrText(ocrText);
+    const link = captionLink || parsed.link;
+
+    if (!link) {
+      return ctx.reply(
+        '❌ Não encontrei o link do produto.\n\n' +
+        'Envie a foto com o link na legenda:\n' +
+        '<code>https://shopee.com.br/produto</code>',
+        { parse_mode: 'HTML' }
+      );
+    }
+
+    await ctx.reply(`📝 Texto lido:\n<code>${ocrText.slice(0, 300)}</code>\n\n⏳ Salvando produto...`, { parse_mode: 'HTML' });
+
+    // Faz upload da foto para o Supabase
+    const imageUrl = await uploadImageToSupabase(fileLink.href);
+
+    // Salva no banco
+    const { data: product, error } = await supabase
+      .from('products')
+      .insert({
+        title: parsed.title,
+        description: parsed.title,
+        original_price: parsed.price || 0,
+        promo_price: parsed.price || 0,
+        affiliate_link: link,
+        platform: 'shopee',
+        active: true,
+        featured: false,
+      })
+      .select()
+      .single();
+
+    if (error) throw error;
+
+    if (imageUrl && product) {
+      await supabase.from('product_images').insert({ product_id: product.id, url: imageUrl, order: 0 });
+    }
+
+    const escapeHtml = t => t.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    await ctx.reply(
+      `✅ <b>Produto salvo via OCR!</b>\n\n` +
+      `📦 <b>Título:</b> ${escapeHtml(parsed.title)}\n` +
+      `💰 <b>Preço:</b> ${parsed.price > 0 ? `R$ ${parsed.price.toFixed(2)}` : 'Consultar'}\n` +
+      `🆔 <b>ID:</b> ${product.id}\n\n` +
+      `💡 Ajuste título/preço/categoria no Painel Admin se necessário.`,
+      { parse_mode: 'HTML' }
+    );
+
+  } catch (err) {
+    console.error('💥 Erro no OCR:', err.message);
+    ctx.reply('❌ Erro ao processar a print: ' + err.message);
+  }
 });
 
 // ========== COMANDO /p - POSTAGEM LIVRE (PARSE INTELIGENTE) ==========

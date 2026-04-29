@@ -23,3 +23,5 @@ services:
         sync: false
       - key: FRONTEND_URL
         sync: false
+      - key: GOOGLE_VISION_CREDENTIALS
+        sync: false
