@@ -121,29 +121,29 @@ bot.start((ctx) => {
   );
 });
 
-// ========== HANDLER DE FOTO SEM COMANDO (foto + link na legenda) ==========
+// ========== HANDLER DE FOTO SEM COMANDO (OCR + SESSÃO) ==========
 bot.on('photo', async (ctx) => {
   if (ctx.message.caption?.startsWith('/p')) return;
 
   const userId = ctx.from.id;
   const session = getSession(userId);
 
-  // ── MODO: aguardando foto extra do produto ──
+  // ── MODO: aguardando foto do produto (após OCR) ──
   if (session.awaitingProductPhoto && session.pendingProduct) {
-    console.log('\n📸 ===== FOTO EXTRA DO PRODUTO =====');
+    console.log('\n📸 ===== FOTO DO PRODUTO RECEBIDA =====');
     try {
       const photo = ctx.message.photo[ctx.message.photo.length - 1];
       const fileLink = await ctx.telegram.getFileLink(photo.file_id);
       const imageUrl = await uploadImageToSupabase(fileLink.href);
 
       if (imageUrl) {
-        session.pendingProduct.imageCount = (session.pendingProduct.imageCount || 0) + 1;
         await supabase.from('product_images').insert({
           product_id: session.pendingProduct.id,
           url: imageUrl,
-          order: session.pendingProduct.imageCount,
+          order: (session.pendingProduct.imageCount || 0),
         });
-        await ctx.reply(`✅ Foto ${session.pendingProduct.imageCount + 1} adicionada!\n\nEnvie mais fotos ou /fim para finalizar.`);
+        session.pendingProduct.imageCount = (session.pendingProduct.imageCount || 0) + 1;
+        await ctx.reply(`✅ Foto adicionada! (${session.pendingProduct.imageCount} foto(s))\n\nEnvie mais fotos ou digite /fim para finalizar.`);
       }
     } catch (err) {
       ctx.reply('❌ Erro ao salvar foto: ' + err.message);
@@ -151,69 +151,79 @@ bot.on('photo', async (ctx) => {
     return;
   }
 
-  // ── MODO PRINCIPAL: foto do produto + link na legenda ──
-  console.log('\n📸 ===== FOTO + LINK RECEBIDA =====');
+  // ── MODO: OCR da print ──
+  console.log('\n📸 ===== PRINT RECEBIDA (OCR) =====');
 
-  const caption = ctx.message.caption || '';
-  const linkMatch = caption.match(/(https?:\/\/[^\s]+)/i);
-  const link = linkMatch?.[1];
-
-  if (!link) {
-    return ctx.reply(
-      '❌ Envie a foto com o link na legenda!\n\nExemplo:\n<code>https://s.shopee.com.br/xxx</code>',
-      { parse_mode: 'HTML' }
-    );
+  if (!OCR_SPACE_KEY) {
+    return ctx.reply('❌ OCR não configurado. Use /p com o link na legenda.');
   }
 
-  await ctx.reply('⏳ Extraindo dados do link...');
+  await ctx.reply('⏳ Lendo a print com OCR...');
 
   try {
-    // Segue redirecionamento se for link encurtado
-    let finalLink = link;
-    if (link.includes('s.shopee.com.br') || link.includes('shp.ee')) {
-      try { finalLink = await followRedirect(link); } catch { finalLink = link; }
-    }
-
-    // Extrai dados do link
-    const productData = await extractShopeeData(finalLink);
-
-    // Faz upload da foto enviada
     const photo = ctx.message.photo[ctx.message.photo.length - 1];
     const fileLink = await ctx.telegram.getFileLink(photo.file_id);
-    const imageUrl = await uploadImageToSupabase(fileLink.href);
+    const { data: imageBuffer } = await axios.get(fileLink.href, { responseType: 'arraybuffer' });
 
-    // Busca categorias
+    const ocrText = await extractTextFromImage(Buffer.from(imageBuffer));
+    if (!ocrText) {
+      return ctx.reply('❌ Não consegui ler texto na imagem. Tente usar /p com o link na legenda.');
+    }
+
+    const caption = ctx.message.caption || '';
+    const captionLink = caption.match(/(https?:\/\/[^\s]+)/i)?.[1];
+    const parsed = parseOcrText(ocrText);
+    const link = captionLink || parsed.link;
+
+    if (!link) {
+      return ctx.reply(
+        '❌ Não encontrei o link do produto.\n\nEnvie a print com o link na legenda:\n<code>https://s.shopee.com.br/xxx</code>',
+        { parse_mode: 'HTML' }
+      );
+    }
+
+    // Busca categorias do banco
     const { data: cats } = await supabase.from('categories').select('id, name, icon').eq('active', true).order('name');
     const categories = cats || [];
 
-    // Salva na sessão
-    session.pendingOcr = {
-      parsed: {
-        title: productData.title || 'Produto',
-        price: productData.price || 0,
-      },
-      link: finalLink,
-      imageUrl,
-    };
-    session.awaitingCategory = true;
-    session.categories = categories;
+    // Salva na sessão para usar depois
+    session.pendingOcr = { parsed, link, ocrText };
 
     const escapeHtml = t => t.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
     const catList = categories.map((c, i) => `${i + 1}. ${c.icon} ${c.name}`).join('\n');
 
     await ctx.reply(
-      `📦 <b>Dados extraídos:</b>\n` +
-      `📝 Título: ${escapeHtml(productData.title || 'Produto')}\n` +
-      `💰 Preço: ${productData.price > 0 ? `R$ ${productData.price.toFixed(2)}` : 'Consultar'}\n` +
-      `🖼️ Foto: ${imageUrl ? '✅' : '❌'}\n\n` +
+      `📝 <b>Dados extraídos:</b>\n` +
+      `📦 Título: ${escapeHtml(parsed.title)}\n` +
+      `💰 Preço: ${parsed.price > 0 ? `R$ ${parsed.price.toFixed(2)}` : 'Consultar'}\n` +
+      `🔗 Link: ${escapeHtml(link)}\n\n` +
       `📂 <b>Escolha a categoria (responda com o número):</b>\n${catList}`,
       { parse_mode: 'HTML' }
     );
 
+    session.awaitingCategory = true;
+    session.categories = categories;
+
   } catch (err) {
-    console.error('💥 Erro:', err.message);
-    ctx.reply('❌ Erro ao processar: ' + err.message);
+    console.error('💥 Erro no OCR:', err.message);
+    ctx.reply('❌ Erro ao processar a print: ' + err.message);
   }
+});
+
+// ========== COMANDO /fim — finaliza envio de fotos ==========
+bot.command('fim', async (ctx) => {
+  const userId = ctx.from.id;
+  const session = getSession(userId);
+
+  if (session.pendingProduct) {
+    const p = session.pendingProduct;
+    clearSession(userId);
+    return ctx.reply(
+      `✅ <b>Produto finalizado!</b>\n🆔 ID: ${p.id}\n📸 ${p.imageCount || 0} foto(s) salva(s)\n\n💡 Ajuste no Painel Admin se necessário.`,
+      { parse_mode: 'HTML' }
+    );
+  }
+  ctx.reply('Nenhum produto pendente.');
 });
 
 // ========== COMANDO /p - POSTAGEM LIVRE (PARSE INTELIGENTE) ==========
