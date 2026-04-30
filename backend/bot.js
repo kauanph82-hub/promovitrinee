@@ -58,6 +58,15 @@ async function extractTextFromImage(imageBuffer) {
   return text;
 }
 
+// Calcula preço original com desconto aleatório (17%, 29% ou 45%)
+function calcOriginalPrice(promoPrice) {
+  if (!promoPrice || promoPrice <= 0) return 0;
+  const discounts = [17, 29, 45];
+  const discount = discounts[Math.floor(Math.random() * discounts.length)];
+  const original = promoPrice / (1 - discount / 100);
+  return Math.round(original * 100) / 100; // arredonda 2 casas
+}
+
 function detectPlatform(link) {
   if (!link) return 'other';
   if (link.includes('shopee')) return 'shopee';
@@ -361,7 +370,7 @@ bot.command('p', async (ctx) => {
       .insert({
         title: title,
         description: description,
-        original_price: price,
+        original_price: calcOriginalPrice(price),
         promo_price: price,
         affiliate_link: link,
         platform: 'shopee',
@@ -457,7 +466,7 @@ bot.on('text', async (ctx) => {
         .insert({
           title: parsed.title,
           description: parsed.title,
-          original_price: parsed.price || 0,
+          original_price: calcOriginalPrice(parsed.price || 0),
           promo_price: parsed.price || 0,
           affiliate_link: link,
           platform: detectPlatform(link),
@@ -581,7 +590,7 @@ bot.on('text', async (ctx) => {
       .insert({
         title: productData.title,
         description: productData.title,
-        original_price: productData.price || 0,
+        original_price: calcOriginalPrice(productData.price || 0),
         promo_price: productData.price || 0,
         affiliate_link: url,
         platform: 'shopee',
