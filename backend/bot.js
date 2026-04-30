@@ -78,20 +78,42 @@ function parseOcrText(text) {
   const linkMatch = text.match(/(https?:\/\/[^\s]+(?:shopee|shp\.ee|s\.shopee)[^\s]*)/i);
   const link = linkMatch ? linkMatch[1] : null;
 
-  // Extrai preço (ex: R$ 49,90 ou 49.90)
-  const priceMatch = text.match(/R?\$?\s*(\d{1,4}[.,]\d{2})/i);
+  // Extrai preço — pega o maior valor encontrado (evita pegar "16%" como preço)
   let price = 0;
-  if (priceMatch) {
-    price = parseFloat(priceMatch[1].replace(',', '.'));
+  const priceMatches = [...text.matchAll(/R\$\s*(\d{1,4}[.,]\d{2})/gi)];
+  if (priceMatches.length > 0) {
+    const prices = priceMatches.map(m => parseFloat(m[1].replace(',', '.')));
+    price = Math.max(...prices);
   }
 
-  // Título: primeira linha longa que não seja preço nem link
-  const title = lines.find(l =>
-    l.length > 10 &&
-    !l.match(/https?:\/\//) &&
-    !l.match(/R?\$?\s*\d+[.,]\d{2}/) &&
-    !l.match(/^\d+$/)
-  ) || 'Produto Shopee';
+  // Título: ignora linhas curtas, números, preços, links, percentuais, vendas
+  const skipPatterns = [
+    /https?:\/\//,           // links
+    /R\$\s*\d/,              // preços
+    /^\d+[.,]\d{2}$/,        // só número decimal
+    /^\d+%/,                 // percentual
+    /vendido/i,              // "X Vendido(s)"
+    /avalia/i,               // avaliações
+    /frete/i,                // frete
+    /parcela/i,              // parcelamento
+    /cupom/i,                // cupom
+    /desconto/i,             // desconto
+    /^\d+(\.\d+)?$/,         // só números
+    /afiliado/i,             // afiliados
+    /compartilh/i,           // compartilhar
+    /aprender/i,             // "Aprender com Criadores"
+    /criador/i,
+    /loja/i,                 // nome da loja
+    /seguir/i,
+    /chat/i,
+    /gosto/i,
+  ];
+
+  const title = lines.find(l => {
+    if (l.length < 15) return false;
+    if (skipPatterns.some(p => p.test(l))) return false;
+    return true;
+  }) || lines.find(l => l.length > 8 && !l.match(/https?:\/\//)) || 'Produto Shopee';
 
   return { link, price, title };
 }
