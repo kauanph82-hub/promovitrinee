@@ -87,12 +87,26 @@ function parseOcrText(text) {
   const linkMatch = text.match(/(https?:\/\/[^\s]+(?:shopee|shp\.ee|s\.shopee)[^\s]*)/i);
   const link = linkMatch ? linkMatch[1] : null;
 
-  // Extrai preço — pega o maior valor encontrado (evita pegar "16%" como preço)
+  // Extrai preço — tenta vários formatos
   let price = 0;
+
+  // Formato 1: R$ 54,99 ou R$54.99
   const priceMatches = [...text.matchAll(/R\$\s*(\d{1,4}[.,]\d{2})/gi)];
   if (priceMatches.length > 0) {
     const prices = priceMatches.map(m => parseFloat(m[1].replace(',', '.')));
-    price = Math.max(...prices);
+    // Pega o menor preço válido (preço promocional costuma ser menor)
+    price = Math.min(...prices.filter(p => p > 0));
+  }
+
+  // Formato 2: só número com vírgula/ponto (ex: 54,99 ou 54.99) se não achou ainda
+  if (!price) {
+    const numMatches = [...text.matchAll(/\b(\d{1,4}[.,]\d{2})\b/g)];
+    if (numMatches.length > 0) {
+      const prices = numMatches
+        .map(m => parseFloat(m[1].replace(',', '.')))
+        .filter(p => p > 1 && p < 99999); // filtra valores absurdos
+      if (prices.length > 0) price = Math.min(...prices);
+    }
   }
 
   // Título: ignora linhas curtas, números, preços, links, percentuais, vendas
