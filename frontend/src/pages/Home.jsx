@@ -260,7 +260,15 @@ export default function Home() {
         {/* ── RECOMENDADAS ── */}
         {products.length > 0 && (
           <div className="mt-8">
-            <p className="text-gray-800 text-xl font-bold mb-4">Recomendadas</p>
+            <div className="flex items-center gap-3 mb-4">
+              <p className="text-gray-800 text-xl font-bold">Recomendadas</p>
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-gray-500">Grupo de promoções:</span>
+                <a href="https://chat.whatsapp.com/GvLSaqoNhwH0sa3wNTuEnE" target="_blank" rel="noopener noreferrer">
+                  <img src="https://i.postimg.cc/14xYkJTz/i618809.png" alt="Grupo WhatsApp" className="h-8 w-auto object-contain hover:opacity-80 transition-opacity" />
+                </a>
+              </div>
+            </div>
             <div className="flex gap-4 overflow-x-auto pb-3 scrollbar-none -mx-1 px-1">
               {products.slice(0, 6).map(p => {
                 const plat = getPlatform(p.platform);
