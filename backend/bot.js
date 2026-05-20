@@ -84,7 +84,7 @@ Responda SOMENTE em JSON válido, sem explicações, sem markdown:
 {"titulo": "nome do produto", "preco": 32.49, "plataforma": "shopee", "avaliacao": 4.7, "vendas": 3000}`;
 
     const { data } = await axios.post(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_KEY}`,
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_KEY}`,
       {
         contents: [{
           parts: [
@@ -113,6 +113,7 @@ Responda SOMENTE em JSON válido, sem explicações, sem markdown:
     };
   } catch (err) {
     console.error('❌ Gemini Vision erro:', err.message);
+    console.error('❌ Detalhes:', err.response?.data ? JSON.stringify(err.response.data).slice(0, 500) : 'sem detalhes');
     return { title: 'Produto', price: 0, platform: 'other', rating: 0, sales_count: 0, link };
   }
 }
@@ -140,7 +141,7 @@ Responda SOMENTE em JSON válido, sem explicações, sem markdown:
 Se não encontrar algum campo, use o valor padrão (0 para números, "other" para plataforma, "Produto" para titulo).`;
 
     const { data } = await axios.post(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_KEY}`,
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_KEY}`,
       {
         contents: [{ parts: [{ text: prompt }] }],
         generationConfig: { temperature: 0.1, maxOutputTokens: 200 },
