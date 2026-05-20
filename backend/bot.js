@@ -11,7 +11,8 @@ const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
 const ADMIN_CHAT_ID = process.env.ADMIN_CHAT_ID;
 const OCR_SPACE_KEY = process.env.OCR_SPACE_KEY || 'K84713721288957';
 const OPENROUTER_KEY = process.env.OPENROUTER_KEY;
-const OPENROUTER_MODEL = 'nvidia/nemotron-nano-12b-v2-vl:free';
+const OPENROUTER_MODEL_VISION = 'nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free'; // visão de imagem
+const OPENROUTER_MODEL_TEXT = 'liquid/lfm-2.5-1.2b-instruct:free';                   // texto/categorização
 
 console.log('🔑 Token do bot (últimos 3 chars):', BOT_TOKEN ? BOT_TOKEN.slice(-3) : '❌ NÃO ENCONTRADO');
 console.log('🔧 Admin ID:', ADMIN_CHAT_ID);
@@ -89,7 +90,7 @@ Responda SOMENTE em JSON válido, sem explicações, sem markdown:
     const { data } = await axios.post(
       'https://openrouter.ai/api/v1/chat/completions',
       {
-        model: OPENROUTER_MODEL,
+        model: OPENROUTER_MODEL_VISION,
         messages: [{
           role: 'user',
           content: [
@@ -160,7 +161,7 @@ Se não encontrar algum campo, use o valor padrão (0 para números, "other" par
     const { data } = await axios.post(
       'https://openrouter.ai/api/v1/chat/completions',
       {
-        model: OPENROUTER_MODEL,
+        model: OPENROUTER_MODEL_TEXT,
         messages: [{ role: 'user', content: prompt }],
         temperature: 0.1,
         max_tokens: 200,
@@ -303,7 +304,7 @@ Responda apenas com o número, nada mais.`;
     const { data } = await axios.post(
       'https://openrouter.ai/api/v1/chat/completions',
       {
-        model: OPENROUTER_MODEL,
+        model: OPENROUTER_MODEL_TEXT,
         messages: [{ role: 'user', content: prompt }],
         temperature: 0.1,
         max_tokens: 10,
