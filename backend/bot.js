@@ -11,10 +11,12 @@ const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
 const ADMIN_CHAT_ID = process.env.ADMIN_CHAT_ID;
 const GOOGLE_VISION_CREDENTIALS = process.env.GOOGLE_VISION_CREDENTIALS;
 const OCR_SPACE_KEY = process.env.OCR_SPACE_KEY || 'K84713721288957';
+const GEMINI_KEY = process.env.GEMINI_KEY || 'AIzaSyDJ5XXvt5hEGDaVP4aF_62p_gtAYPzhNY8';
 
 console.log('🔑 Token do bot (últimos 3 chars):', BOT_TOKEN ? BOT_TOKEN.slice(-3) : '❌ NÃO ENCONTRADO');
 console.log('🔧 Admin ID:', ADMIN_CHAT_ID);
 console.log('👁️ OCR.space:', OCR_SPACE_KEY ? 'Configurado ✅' : '❌ NÃO CONFIGURADO');
+console.log('🤖 Gemini:', GEMINI_KEY ? 'Configurado ✅' : '❌ NÃO CONFIGURADO');
 
 const bot = new Telegraf(BOT_TOKEN);
 
@@ -64,7 +66,52 @@ function calcOriginalPrice(promoPrice) {
   const discounts = [17, 29, 45];
   const discount = discounts[Math.floor(Math.random() * discounts.length)];
   const original = promoPrice / (1 - discount / 100);
-  return Math.round(original * 100) / 100; // arredonda 2 casas
+  return Math.round(original * 100) / 100;
+}
+
+// ========== GEMINI — extrai título e preço do texto OCR ==========
+async function parseWithGemini(ocrText, link) {
+  try {
+    const prompt = `Você é um assistente que extrai informações de prints de lojas online.
+
+Texto extraído por OCR de uma print de produto:
+"""
+${ocrText.slice(0, 1500)}
+"""
+
+Extraia APENAS:
+1. O título/nome do produto (o nome real do produto, não a loja, não a busca, não botões)
+2. O preço promocional atual em reais (o preço que está sendo cobrado agora, não o parcelado, não o original riscado)
+
+Responda SOMENTE em JSON válido, sem explicações:
+{"titulo": "nome do produto aqui", "preco": 49.90}
+
+Se não encontrar o preço, use 0. Se não encontrar o título, use "Produto".`;
+
+    const { data } = await axios.post(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_KEY}`,
+      {
+        contents: [{ parts: [{ text: prompt }] }],
+        generationConfig: { temperature: 0.1, maxOutputTokens: 200 },
+      }
+    );
+
+    const raw = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+    console.log('🤖 Gemini resposta:', raw);
+
+    const jsonMatch = raw.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) throw new Error('JSON não encontrado');
+
+    const parsed = JSON.parse(jsonMatch[0]);
+    return {
+      title: parsed.titulo || 'Produto',
+      price: parseFloat(parsed.preco) || 0,
+      link: link || null,
+    };
+  } catch (err) {
+    console.error('❌ Gemini erro:', err.message);
+    return parseOcrText(ocrText, link);
+  }
 }
 
 function detectPlatform(link) {
@@ -87,25 +134,26 @@ function parseOcrText(text) {
   const linkMatch = text.match(/(https?:\/\/[^\s]+(?:shopee|shp\.ee|s\.shopee)[^\s]*)/i);
   const link = linkMatch ? linkMatch[1] : null;
 
-  // Extrai preço — tenta vários formatos
+  // Extrai preço — pega o maior valor com R$ (preço principal, não parcelado)
   let price = 0;
 
-  // Formato 1: R$ 54,99 ou R$54.99
+  // Formato 1: R$ 54,99 ou R$54.99 — pega o MAIOR (preço cheio na tela)
   const priceMatches = [...text.matchAll(/R\$\s*(\d{1,4}[.,]\d{2})/gi)];
   if (priceMatches.length > 0) {
     const prices = priceMatches.map(m => parseFloat(m[1].replace(',', '.')));
-    // Pega o menor preço válido (preço promocional costuma ser menor)
-    price = Math.min(...prices.filter(p => p > 0));
+    // Filtra valores absurdos e pega o maior (preço principal costuma ser o maior)
+    const valid = prices.filter(p => p > 1 && p < 99999);
+    if (valid.length > 0) price = Math.max(...valid);
   }
 
-  // Formato 2: só número com vírgula/ponto (ex: 54,99 ou 54.99) se não achou ainda
+  // Formato 2: fallback sem R$ se não achou
   if (!price) {
     const numMatches = [...text.matchAll(/\b(\d{1,4}[.,]\d{2})\b/g)];
     if (numMatches.length > 0) {
       const prices = numMatches
         .map(m => parseFloat(m[1].replace(',', '.')))
-        .filter(p => p > 1 && p < 99999); // filtra valores absurdos
-      if (prices.length > 0) price = Math.min(...prices);
+        .filter(p => p > 5 && p < 99999);
+      if (prices.length > 0) price = Math.max(...prices);
     }
   }
 
@@ -126,17 +174,34 @@ function parseOcrText(text) {
     /compartilh/i,           // compartilhar
     /aprender/i,             // "Aprender com Criadores"
     /criador/i,
-    /loja/i,                 // nome da loja
     /seguir/i,
     /chat/i,
     /gosto/i,
+    /adicionar/i,            // "Adicionar ao carrinho"
+    /carrinho/i,
+    /comprar/i,
+    /economize/i,
+    /m[áa]ximo/i,            // "máximo de R$"
+    /termina/i,              // "Termina em X dias"
+    /oferta/i,
+    /sem juros/i,
+    /\d+x\s*R\$/i,           // "2x R$16,00"
+    /^\d{1,2}:\d{2}$/,       // horário "19:30"
+    /^[QX✕×]/,               // botão fechar
   ];
 
-  const title = lines.find(l => {
+  // Pega a linha mais longa que não seja lixo — título costuma ser a descrição mais completa
+  const candidatos = lines.filter(l => {
     if (l.length < 15) return false;
     if (skipPatterns.some(p => p.test(l))) return false;
     return true;
-  }) || lines.find(l => l.length > 8 && !l.match(/https?:\/\//)) || 'Produto Shopee';
+  });
+
+  // Prefere linhas com mais de 20 chars (título real é mais longo)
+  const title = candidatos.find(l => l.length > 20)
+    || candidatos[0]
+    || lines.find(l => l.length > 8 && !l.match(/https?:\/\//))
+    || 'Produto';
 
   return { link, price, title };
 }
@@ -217,7 +282,10 @@ bot.on('photo', async (ctx) => {
 
     const caption = ctx.message.caption || '';
     const captionLink = caption.match(/(https?:\/\/[^\s]+)/i)?.[1];
-    const parsed = parseOcrText(ocrText);
+
+    // Usa Gemini para extrair título e preço de forma inteligente
+    await ctx.reply('🤖 Analisando com IA...');
+    const parsed = await parseWithGemini(ocrText, captionLink);
     const link = captionLink || parsed.link;
 
     if (!link) {
