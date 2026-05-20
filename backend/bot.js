@@ -11,8 +11,8 @@ const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
 const ADMIN_CHAT_ID = process.env.ADMIN_CHAT_ID;
 const OCR_SPACE_KEY = process.env.OCR_SPACE_KEY || 'K84713721288957';
 const OPENROUTER_KEY = process.env.OPENROUTER_KEY;
-const OPENROUTER_MODEL_VISION = 'nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free'; // visão de imagem
-const OPENROUTER_MODEL_TEXT = 'liquid/lfm-2.5-1.2b-instruct:free';                   // texto/categorização
+const OPENROUTER_MODEL_VISION = 'nvidia/nemotron-nano-12b-v2-vl:free'; // visão de imagem (base64)
+const OPENROUTER_MODEL_TEXT = 'liquid/lfm-2.5-1.2b-instruct:free';    // texto/categorização (rápido)
 
 console.log('🔑 Token do bot (últimos 3 chars):', BOT_TOKEN ? BOT_TOKEN.slice(-3) : '❌ NÃO ENCONTRADO');
 console.log('🔧 Admin ID:', ADMIN_CHAT_ID);
@@ -377,8 +377,8 @@ bot.on('photo', async (ctx) => {
     return;
   }
 
-  // ── MODO: Gemini Vision analisa a print ──
-  console.log('\n📸 ===== PRINT RECEBIDA (Gemini Vision) =====');
+  // ── MODO: OCR extrai texto, IA de texto analisa ──
+  console.log('\n📸 ===== PRINT RECEBIDA (OCR + IA) =====');
 
   await ctx.reply('🤖 Analisando a print com IA...');
 
@@ -386,20 +386,37 @@ bot.on('photo', async (ctx) => {
     const photo = ctx.message.photo[ctx.message.photo.length - 1];
     const fileLink = await ctx.telegram.getFileLink(photo.file_id);
     const { data: imageBuffer } = await axios.get(fileLink.href, { responseType: 'arraybuffer' });
-    const base64Image = Buffer.from(imageBuffer).toString('base64');
 
     const caption = ctx.message.caption || '';
     const captionLink = caption.match(/(https?:\/\/[^\s]+)/i)?.[1];
 
-    // Gemini Vision analisa a imagem diretamente
-    const parsed = await analyzeImageWithGemini(base64Image, captionLink);
-    const link = captionLink || parsed.link;
+    // Extrai texto via OCR.space
+    let ocrText = '';
+    try {
+      ocrText = await extractTextFromImage(Buffer.from(imageBuffer));
+    } catch (ocrErr) {
+      console.warn('⚠️ OCR falhou, usando base64:', ocrErr.message);
+    }
+
+    // Extrai link do OCR se não veio na legenda
+    const ocrLink = ocrText.match(/(https?:\/\/[^\s]+)/i)?.[1];
+    const link = captionLink || ocrLink;
 
     if (!link) {
       return ctx.reply(
         '❌ Não encontrei o link do produto.\n\nEnvie a print com o link na legenda:\n<code>https://s.shopee.com.br/xxx</code>',
         { parse_mode: 'HTML' }
       );
+    }
+
+    // IA de texto analisa o OCR (rápido e preciso)
+    let parsed;
+    if (ocrText.length > 20) {
+      parsed = await parseWithGemini(ocrText, link);
+    } else {
+      // Fallback: visão direta se OCR falhou
+      const base64Image = Buffer.from(imageBuffer).toString('base64');
+      parsed = await analyzeImageWithGemini(base64Image, link);
     }
 
     // Busca categorias do banco
@@ -423,7 +440,7 @@ bot.on('photo', async (ctx) => {
           original_price: calcOriginalPrice(parsed.price || 0),
           promo_price: parsed.price || 0,
           affiliate_link: link,
-          platform: detectPlatform(link) || parsed.platform || 'other',
+          platform: detectPlatform(link) || 'other',
           category_id: autoCategoria.id,
           rating: parsed.rating || null,
           sales_count: parsed.sales_count || null,
@@ -457,7 +474,7 @@ bot.on('photo', async (ctx) => {
         `📝 <b>Dados extraídos:</b>\n` +
         `📦 Título: ${escapeHtml(parsed.title)}\n` +
         `💰 Preço: ${parsed.price > 0 ? `R$ ${parsed.price.toFixed(2)}` : 'Consultar'}\n` +
-        `🏪 Plataforma: ${parsed.platform || 'other'}\n` +
+        `🏪 Plataforma: ${detectPlatform(link)}\n` +
         `⭐ Avaliação: ${parsed.rating > 0 ? parsed.rating : 'N/A'}\n` +
         `🛒 Vendas: ${parsed.sales_count > 0 ? parsed.sales_count : 'N/A'}\n` +
         `🔗 Link: ${escapeHtml(link)}\n\n` +
@@ -469,7 +486,7 @@ bot.on('photo', async (ctx) => {
     }
 
   } catch (err) {
-    console.error('💥 Erro no OCR:', err.message);
+    console.error('💥 Erro ao processar print:', err.message);
     ctx.reply('❌ Erro ao processar a print: ' + err.message);
   }
 });
