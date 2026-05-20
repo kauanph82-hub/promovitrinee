@@ -427,7 +427,7 @@ bot.on('photo', async (ctx) => {
           category_id: autoCategoria.id,
           rating: parsed.rating || null,
           sales_count: parsed.sales_count || null,
-          active: true,
+          active: false,
           featured: false,
         })
         .select()
@@ -481,9 +481,13 @@ bot.command('fim', async (ctx) => {
 
   if (session.pendingProduct) {
     const p = session.pendingProduct;
+
+    // Ativa o produto agora que tem foto
+    await supabase.from('products').update({ active: true }).eq('id', p.id);
+
     clearSession(userId);
     return ctx.reply(
-      `✅ <b>Produto finalizado!</b>\n🆔 ID: ${p.id}\n📸 ${p.imageCount || 0} foto(s) salva(s)\n\n💡 Ajuste no Painel Admin se necessário.`,
+      `✅ <b>Produto publicado!</b>\n🆔 ID: ${p.id}\n📸 ${p.imageCount || 0} foto(s) salva(s)\n\n🔥 Já está visível no site!`,
       { parse_mode: 'HTML' }
     );
   }

@@ -449,23 +449,15 @@ export default function Home() {
                               <span className="text-sm text-gray-400 italic">Ver preço no site</span>
                             )}
                           </div>
-                          {/* Estrelas e vendas */}
-                          {(p.rating > 0 || p.sales_count > 0) && (
-                            <div className="flex items-center gap-2 mt-1.5 flex-wrap">
-                              {p.rating > 0 && (
-                                <div className="flex items-center gap-0.5">
-                                  {Array.from({ length: 5 }).map((_, i) => (
-                                    <span key={i} className={`text-sm ${i < Math.floor(p.rating) ? 'text-yellow-400' : i < p.rating ? 'text-yellow-300' : 'text-gray-200'}`}>★</span>
-                                  ))}
-                                  <span className="text-xs text-gray-400 ml-1">{p.rating}</span>
-                                </div>
-                              )}
-                              {p.sales_count > 0 && (
-                                <span className="text-xs text-gray-400">
-                                  {p.sales_count >= 1000 ? `${(p.sales_count / 1000).toFixed(1)}k` : p.sales_count}+ vendas
-                                </span>
-                              )}
-                            </div>
+                          {/* Vendidos */}
+                          {p.sales_count > 0 && (
+                            <p className="text-[11px] text-gray-400/80 mt-1.5">
+                              🛒 {p.sales_count >= 1000000
+                                ? `${(p.sales_count / 1000000).toFixed(1)} mi vendidos`
+                                : p.sales_count >= 1000
+                                ? `${Math.floor(p.sales_count / 1000)} mil vendidos`
+                                : `${p.sales_count} vendidos`}
+                            </p>
                           )}
                         </div>
                       </div>
