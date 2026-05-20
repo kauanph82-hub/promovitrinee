@@ -72,21 +72,24 @@ function calcOriginalPrice(promoPrice) {
 // ========== GEMINI — extrai título e preço do texto OCR ==========
 async function parseWithGemini(ocrText, link) {
   try {
-    const prompt = `Você é um assistente que extrai informações de prints de lojas online.
+    const prompt = `Você é um assistente especializado em extrair informações de prints de lojas online brasileiras (Shopee, TikTok Shop, Mercado Livre, Amazon, etc).
 
 Texto extraído por OCR de uma print de produto:
 """
-${ocrText.slice(0, 1500)}
+${ocrText.slice(0, 2000)}
 """
 
-Extraia APENAS:
-1. O título/nome do produto (o nome real do produto, não a loja, não a busca, não botões)
-2. O preço promocional atual em reais (o preço que está sendo cobrado agora, não o parcelado, não o original riscado)
+Extraia as seguintes informações:
+1. titulo: O nome/título real do produto (não nome da loja, não texto de busca, não botões como "Comprar", "Adicionar ao carrinho")
+2. preco: O preço promocional atual em reais (número decimal, ex: 32.49). Não o preço parcelado, não o preço original riscado.
+3. plataforma: A loja/plataforma (shopee, mercadolivre, amazon, aliexpress, shein, magalu, americanas, tiktok, ou other)
+4. avaliacao: A nota de avaliação do produto (número de 0 a 5, ex: 4.7). Se não encontrar, use 0.
+5. vendas: Quantidade de vendas/vendidos (número inteiro, ex: 3000). Se não encontrar, use 0.
 
-Responda SOMENTE em JSON válido, sem explicações:
-{"titulo": "nome do produto aqui", "preco": 49.90}
+Responda SOMENTE em JSON válido, sem explicações, sem markdown:
+{"titulo": "nome do produto", "preco": 32.49, "plataforma": "shopee", "avaliacao": 4.7, "vendas": 3000}
 
-Se não encontrar o preço, use 0. Se não encontrar o título, use "Produto".`;
+Se não encontrar algum campo, use o valor padrão (0 para números, "other" para plataforma, "Produto" para titulo).`;
 
     const { data } = await axios.post(
       `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_KEY}`,
@@ -106,11 +109,15 @@ Se não encontrar o preço, use 0. Se não encontrar o título, use "Produto".`;
     return {
       title: parsed.titulo || 'Produto',
       price: parseFloat(parsed.preco) || 0,
+      platform: parsed.plataforma || 'other',
+      rating: parseFloat(parsed.avaliacao) || 0,
+      sales_count: parseInt(parsed.vendas) || 0,
       link: link || null,
     };
   } catch (err) {
     console.error('❌ Gemini erro:', err.message);
-    return parseOcrText(ocrText, link);
+    const fallback = parseOcrText(ocrText, link);
+    return { ...fallback, platform: 'other', rating: 0, sales_count: 0 };
   }
 }
 
@@ -551,8 +558,10 @@ bot.on('text', async (ctx) => {
           original_price: calcOriginalPrice(parsed.price || 0),
           promo_price: parsed.price || 0,
           affiliate_link: link,
-          platform: detectPlatform(link),
+          platform: parsed.platform || detectPlatform(link),
           category_id: chosenCat.id,
+          rating: parsed.rating || null,
+          sales_count: parsed.sales_count || null,
           active: true,
           featured: false,
         })
