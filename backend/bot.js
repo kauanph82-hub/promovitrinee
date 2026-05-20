@@ -80,12 +80,11 @@ async function analyzeImageWithGemini(base64Image, link) {
 
 1. titulo: O nome/título real do produto
 2. preco: O preço promocional atual em reais (número decimal, ex: 32.49). Não o parcelado, não o original riscado.
-3. plataforma: A loja (shopee, mercadolivre, amazon, aliexpress, shein, magalu, americanas, tiktok, ou other)
-4. avaliacao: Nota de avaliação de 0 a 5 (ex: 4.7). Use 0 se não encontrar.
-5. vendas: Quantidade de vendas (número inteiro, ex: 3000). Use 0 se não encontrar.
+3. avaliacao: Nota de avaliação de 0 a 5 (ex: 4.7). Use 0 se não encontrar.
+4. vendas: Quantidade de vendas (número inteiro, ex: 3000). Use 0 se não encontrar.
 
 Responda SOMENTE em JSON válido, sem explicações, sem markdown:
-{"titulo": "nome do produto", "preco": 32.49, "plataforma": "shopee", "avaliacao": 4.7, "vendas": 3000}`;
+{"titulo": "nome do produto", "preco": 32.49, "avaliacao": 4.7, "vendas": 3000}`;
 
     const { data } = await axios.post(
       'https://openrouter.ai/api/v1/chat/completions',
@@ -120,7 +119,7 @@ Responda SOMENTE em JSON válido, sem explicações, sem markdown:
     return {
       title: parsed.titulo || 'Produto',
       price: parseFloat(parsed.preco) || 0,
-      platform: parsed.plataforma || detectPlatform(link || ''),
+      platform: detectPlatform(link || ''),
       rating: parseFloat(parsed.avaliacao) || 0,
       sales_count: parseInt(parsed.vendas) || 0,
       link: link || null,
@@ -185,7 +184,7 @@ Se não encontrar algum campo, use o valor padrão (0 para números, "other" par
     return {
       title: parsed.titulo || 'Produto',
       price: parseFloat(parsed.preco) || 0,
-      platform: parsed.plataforma || 'other',
+      platform: detectPlatform(link || ''),
       rating: parseFloat(parsed.avaliacao) || 0,
       sales_count: parseInt(parsed.vendas) || 0,
       link: link || null,
@@ -193,7 +192,7 @@ Se não encontrar algum campo, use o valor padrão (0 para números, "other" par
   } catch (err) {
     console.error('❌ OpenRouter erro:', err.message);
     const fallback = parseOcrText(ocrText, link);
-    return { ...fallback, platform: 'other', rating: 0, sales_count: 0 };
+    return { ...fallback, platform: detectPlatform(link || ''), rating: 0, sales_count: 0 };
   }
 }
 
@@ -423,7 +422,7 @@ bot.on('photo', async (ctx) => {
           original_price: calcOriginalPrice(parsed.price || 0),
           promo_price: parsed.price || 0,
           affiliate_link: link,
-          platform: parsed.platform || detectPlatform(link),
+          platform: detectPlatform(link) || parsed.platform || 'other',
           category_id: autoCategoria.id,
           rating: parsed.rating || null,
           sales_count: parsed.sales_count || null,
@@ -706,7 +705,7 @@ bot.on('text', async (ctx) => {
           original_price: calcOriginalPrice(parsed.price || 0),
           promo_price: parsed.price || 0,
           affiliate_link: link,
-          platform: parsed.platform || detectPlatform(link),
+          platform: detectPlatform(link) || parsed.platform || 'other',
           category_id: chosenCat.id,
           rating: parsed.rating || null,
           sales_count: parsed.sales_count || null,
