@@ -4,7 +4,6 @@ const axios = require('axios');
 const cheerio = require('cheerio');
 const { v4: uuidv4 } = require('uuid');
 const supabase = require('./config/supabase');
-const { GoogleGenerativeAI } = require('@google/generative-ai');
 
 console.log('📦 Carregando bot.js...');
 
