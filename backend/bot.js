@@ -289,7 +289,40 @@ function parseOcrText(text) {
   return { link, price, title };
 }
 
-// ========== COMANDO /START ==========
+// ========== AUTO-CATEGORIZAÇÃO pela IA ==========
+async function autoCategorizarProduto(titulo, categorias) {
+  if (!OPENROUTER_KEY || !categorias.length) return null;
+  try {
+    const lista = categorias.map((c, i) => `${i + 1}. ${c.name}`).join('\n');
+    const prompt = `Dado o título do produto: "${titulo}"
+
+Escolha a categoria mais adequada da lista abaixo e responda SOMENTE com o número:
+${lista}
+
+Responda apenas com o número, nada mais.`;
+
+    const { data } = await axios.post(
+      'https://openrouter.ai/api/v1/chat/completions',
+      {
+        model: OPENROUTER_MODEL,
+        messages: [{ role: 'user', content: prompt }],
+        temperature: 0.1,
+        max_tokens: 10,
+      },
+      {
+        headers: { 'Authorization': `Bearer ${OPENROUTER_KEY}`, 'Content-Type': 'application/json' },
+        timeout: 15000,
+      }
+    );
+    const raw = data.choices?.[0]?.message?.content?.trim() || '';
+    const num = parseInt(raw.match(/\d+/)?.[0]);
+    if (num >= 1 && num <= categorias.length) return categorias[num - 1];
+    return null;
+  } catch (err) {
+    console.error('❌ Auto-categorização erro:', err.message);
+    return null;
+  }
+}
 bot.start((ctx) => {
   console.log('--- COMANDO /START RECEBIDO ---');
   console.log('ID do usuário:', ctx.from.id);
@@ -373,26 +406,67 @@ bot.on('photo', async (ctx) => {
     const { data: cats } = await supabase.from('categories').select('id, name, icon').eq('active', true).order('name');
     const categories = cats || [];
 
-    // Salva na sessão para usar depois
-    session.pendingOcr = { parsed, link };
+    // Auto-categoriza com IA
+    const autoCategoria = await autoCategorizarProduto(parsed.title, categories);
 
     const escapeHtml = t => t.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-    const catList = categories.map((c, i) => `${i + 1}. ${c.icon} ${c.name}`).join('\n');
 
-    await ctx.reply(
-      `📝 <b>Dados extraídos:</b>\n` +
-      `📦 Título: ${escapeHtml(parsed.title)}\n` +
-      `💰 Preço: ${parsed.price > 0 ? `R$ ${parsed.price.toFixed(2)}` : 'Consultar'}\n` +
-      `🏪 Plataforma: ${parsed.platform || 'other'}\n` +
-      `⭐ Avaliação: ${parsed.rating > 0 ? parsed.rating : 'N/A'}\n` +
-      `🛒 Vendas: ${parsed.sales_count > 0 ? parsed.sales_count : 'N/A'}\n` +
-      `🔗 Link: ${escapeHtml(link)}\n\n` +
-      `📂 <b>Escolha a categoria (responda com o número):</b>\n${catList}`,
-      { parse_mode: 'HTML' }
-    );
+    if (autoCategoria) {
+      // Salva direto sem perguntar
+      await ctx.reply('⏳ Salvando produto...');
 
-    session.awaitingCategory = true;
-    session.categories = categories;
+      const { data: product, error } = await supabase
+        .from('products')
+        .insert({
+          title: parsed.title,
+          description: parsed.title,
+          original_price: calcOriginalPrice(parsed.price || 0),
+          promo_price: parsed.price || 0,
+          affiliate_link: link,
+          platform: parsed.platform || detectPlatform(link),
+          category_id: autoCategoria.id,
+          rating: parsed.rating || null,
+          sales_count: parsed.sales_count || null,
+          active: true,
+          featured: false,
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      session.awaitingProductPhoto = true;
+      session.pendingProduct = { id: product.id, imageCount: 0 };
+
+      await ctx.reply(
+        `✅ <b>Produto salvo automaticamente!</b>\n\n` +
+        `📦 ${escapeHtml(parsed.title)}\n` +
+        `💰 ${parsed.price > 0 ? `R$ ${parsed.price.toFixed(2)}` : 'Consultar'}\n` +
+        `📂 ${autoCategoria.icon} ${autoCategoria.name} <i>(auto)</i>\n` +
+        `🛒 ${parsed.sales_count > 0 ? parsed.sales_count + ' vendas' : ''}\n` +
+        `🆔 ID: ${product.id}\n\n` +
+        `📸 <b>Agora envie a(s) foto(s) do produto.</b>\nQuando terminar, digite /fim`,
+        { parse_mode: 'HTML' }
+      );
+    } else {
+      // Fallback: pergunta manualmente se IA falhar
+      session.pendingOcr = { parsed, link };
+      const catList = categories.map((c, i) => `${i + 1}. ${c.icon} ${c.name}`).join('\n');
+
+      await ctx.reply(
+        `📝 <b>Dados extraídos:</b>\n` +
+        `📦 Título: ${escapeHtml(parsed.title)}\n` +
+        `💰 Preço: ${parsed.price > 0 ? `R$ ${parsed.price.toFixed(2)}` : 'Consultar'}\n` +
+        `🏪 Plataforma: ${parsed.platform || 'other'}\n` +
+        `⭐ Avaliação: ${parsed.rating > 0 ? parsed.rating : 'N/A'}\n` +
+        `🛒 Vendas: ${parsed.sales_count > 0 ? parsed.sales_count : 'N/A'}\n` +
+        `🔗 Link: ${escapeHtml(link)}\n\n` +
+        `📂 <b>Escolha a categoria (responda com o número):</b>\n${catList}`,
+        { parse_mode: 'HTML' }
+      );
+      session.awaitingCategory = true;
+      session.categories = categories;
+    }
 
   } catch (err) {
     console.error('💥 Erro no OCR:', err.message);

@@ -66,6 +66,17 @@ export default function ProductCard({ product }) {
             <span className="text-xs text-stone-400 italic">Ver preço</span>
           )}
         </div>
+
+        {/* Vendidos */}
+        {product.sales_count > 0 && (
+          <p className="text-[10px] text-stone-400/70 mt-1">
+            {product.sales_count >= 1000000
+              ? `${(product.sales_count / 1000000).toFixed(1)} mi vendidos`
+              : product.sales_count >= 1000
+              ? `${(product.sales_count / 1000).toFixed(0)} mil vendidos`
+              : `${product.sales_count} vendidos`}
+          </p>
+        )}
       </div>
     </Link>
   );
