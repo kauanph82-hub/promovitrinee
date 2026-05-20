@@ -289,39 +289,46 @@ function parseOcrText(text) {
   return { link, price, title };
 }
 
-// ========== AUTO-CATEGORIZAÇÃO pela IA ==========
-async function autoCategorizarProduto(titulo, categorias) {
-  if (!OPENROUTER_KEY || !categorias.length) return null;
-  try {
-    const lista = categorias.map((c, i) => `${i + 1}. ${c.name}`).join('\n');
-    const prompt = `Dado o título do produto: "${titulo}"
+// ========== AUTO-CATEGORIZAÇÃO por palavras-chave ==========
+function autoCategorizarProduto(titulo, categorias) {
+  if (!categorias.length) return null;
 
-Escolha a categoria mais adequada da lista abaixo e responda SOMENTE com o número:
-${lista}
+  const t = titulo.toLowerCase();
 
-Responda apenas com o número, nada mais.`;
+  // Mapa de palavras-chave por categoria (nome em lowercase)
+  const regras = [
+    { chaves: ['tv', 'televisão', 'televisor', 'monitor', 'notebook', 'laptop', 'computador', 'pc ', 'tablet', 'celular', 'smartphone', 'iphone', 'samsung galaxy', 'xiaomi', 'fone', 'headphone', 'earphone', 'airpod', 'carregador', 'cabo usb', 'hdmi', 'pendrive', 'ssd', 'hd ', 'memória', 'processador', 'placa', 'roteador', 'impressora', 'câmera', 'projetor', 'caixa de som', 'speaker', 'alexa', 'echo', 'kindle', 'stick', 'chromecast', 'smartwatch', 'relógio inteligente', 'drone', 'gopro', 'bateria portátil', 'power bank'], cat: 'eletrônicos' },
+    { chaves: ['mouse', 'teclado', 'webcam', 'microfone', 'hub usb', 'suporte notebook', 'cooler', 'gabinete', 'fonte atx', 'ram ', 'memória ram'], cat: 'informática' },
+    { chaves: ['game', 'controle', 'joystick', 'playstation', 'xbox', 'nintendo', 'ps4', 'ps5', 'switch', 'jogo', 'headset gamer'], cat: 'games' },
+    { chaves: ['camiseta', 'camisa', 'calça', 'bermuda', 'shorts', 'moletom', 'jaqueta', 'casaco', 'blusa masculin', 'roupa masculin', 'cueca', 'meia masculin', 'polo masculin'], cat: 'moda masculina' },
+    { chaves: ['vestido', 'saia', 'blusa feminina', 'roupa feminina', 'moda feminina', 'calcinha', 'sutiã', 'lingerie', 'legging', 'top feminino', 'meia calça'], cat: 'moda feminina' },
+    { chaves: ['tênis', 'sapato', 'sandália', 'chinelo', 'bota', 'sapatilha', 'calçado', 'solado'], cat: 'calçados' },
+    { chaves: ['perfume', 'shampoo', 'condicionador', 'creme', 'hidratante', 'maquiagem', 'batom', 'base', 'sérum', 'protetor solar', 'desodorante', 'sabonete', 'escova de dente', 'aparelho de barbear', 'depilador', 'secador', 'chapinha', 'prancha de cabelo'], cat: 'beleza e saúde' },
+    { chaves: ['sofá', 'cadeira', 'mesa', 'cama', 'colchão', 'armário', 'estante', 'prateleira', 'tapete', 'cortina', 'luminária', 'abajur', 'quadro', 'espelho', 'vaso', 'decoração', 'enfeite', 'porta-retrato'], cat: 'casa e decoração' },
+    { chaves: ['panela', 'frigideira', 'liquidificador', 'batedeira', 'airfryer', 'fritadeira', 'cafeteira', 'chaleira', 'micro-ondas', 'geladeira', 'fogão', 'forno', 'utensílio', 'talheres', 'prato', 'copo', 'garrafa térmica', 'pote', 'forma de bolo'], cat: 'cozinha' },
+    { chaves: ['bicicleta', 'patinete', 'skate', 'bola', 'raquete', 'chuteira', 'luva de boxe', 'corda de pular', 'haltere', 'anilha', 'colchonete', 'barraca', 'mochila de trilha', 'pesca', 'natação', 'surf'], cat: 'esporte e lazer' },
+    { chaves: ['whey', 'creatina', 'suplemento', 'proteína', 'pré-treino', 'bcaa', 'coqueteleira', 'cinto musculação', 'luva academia', 'elástico treino'], cat: 'fitness e academia' },
+    { chaves: ['carrinho de bebê', 'berço', 'fraldas', 'mamadeira', 'chupeta', 'brinquedo infantil', 'boneca', 'carrinho de brinquedo', 'lego', 'mochila escolar', 'lápis', 'caderno', 'kit escolar'], cat: 'bebês e crianças' },
+    { chaves: ['ração', 'coleira', 'guia para cachorro', 'cama pet', 'arranhador gato', 'brinquedo pet', 'aquário', 'comedouro'], cat: 'pets' },
+    { chaves: ['pneu', 'óleo motor', 'filtro de ar', 'suporte veicular', 'carregador veicular', 'câmera ré', 'tapete automotivo', 'capa banco', 'alarme carro', 'kit ferramentas carro'], cat: 'automotivo' },
+    { chaves: ['relógio', 'óculos', 'bolsa', 'carteira', 'cinto', 'mochila', 'pulseira', 'colar', 'brinco', 'anel', 'chapéu', 'boné', 'lenço', 'guarda-chuva'], cat: 'acessórios' },
+    { chaves: ['furadeira', 'parafusadeira', 'serra', 'alicate', 'chave de fenda', 'martelo', 'nível', 'fita métrica', 'extensão elétrica', 'tomada', 'disjuntor'], cat: 'ferramentas' },
+  ];
 
-    const { data } = await axios.post(
-      'https://openrouter.ai/api/v1/chat/completions',
-      {
-        model: OPENROUTER_MODEL_TEXT,
-        messages: [{ role: 'user', content: prompt }],
-        temperature: 0.1,
-        max_tokens: 10,
-      },
-      {
-        headers: { 'Authorization': `Bearer ${OPENROUTER_KEY}`, 'Content-Type': 'application/json' },
-        timeout: 15000,
+  // Busca por palavras-chave
+  for (const regra of regras) {
+    if (regra.chaves.some(chave => t.includes(chave))) {
+      const cat = categorias.find(c => c.name.toLowerCase().includes(regra.cat));
+      if (cat) {
+        console.log(`🏷️ Categoria detectada por palavra-chave: ${cat.name}`);
+        return cat;
       }
-    );
-    const raw = data.choices?.[0]?.message?.content?.trim() || '';
-    const num = parseInt(raw.match(/\d+/)?.[0]);
-    if (num >= 1 && num <= categorias.length) return categorias[num - 1];
-    return null;
-  } catch (err) {
-    console.error('❌ Auto-categorização erro:', err.message);
-    return null;
+    }
   }
+
+  // Fallback: primeira categoria disponível
+  console.log('⚠️ Nenhuma palavra-chave encontrada, usando primeira categoria');
+  return null;
 }
 bot.start((ctx) => {
   console.log('--- COMANDO /START RECEBIDO ---');
@@ -423,8 +430,8 @@ bot.on('photo', async (ctx) => {
     const { data: cats } = await supabase.from('categories').select('id, name, icon').eq('active', true).order('name');
     const categories = cats || [];
 
-    // Auto-categoriza com IA
-    const autoCategoria = await autoCategorizarProduto(parsed.title, categories);
+    // Auto-categoriza por palavras-chave
+    const autoCategoria = autoCategorizarProduto(parsed.title, categories);
 
     const escapeHtml = t => t.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 
