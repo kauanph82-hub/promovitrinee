@@ -69,6 +69,54 @@ function calcOriginalPrice(promoPrice) {
   return Math.round(original * 100) / 100;
 }
 
+// ========== GEMINI VISION — analisa imagem diretamente ==========
+async function analyzeImageWithGemini(base64Image, link) {
+  try {
+    const prompt = `Analise esta imagem de um produto de loja online brasileira e extraia:
+
+1. titulo: O nome/título real do produto
+2. preco: O preço promocional atual em reais (número decimal, ex: 32.49). Não o parcelado, não o original riscado.
+3. plataforma: A loja (shopee, mercadolivre, amazon, aliexpress, shein, magalu, americanas, tiktok, ou other)
+4. avaliacao: Nota de avaliação de 0 a 5 (ex: 4.7). Use 0 se não encontrar.
+5. vendas: Quantidade de vendas (número inteiro, ex: 3000). Use 0 se não encontrar.
+
+Responda SOMENTE em JSON válido, sem explicações, sem markdown:
+{"titulo": "nome do produto", "preco": 32.49, "plataforma": "shopee", "avaliacao": 4.7, "vendas": 3000}`;
+
+    const { data } = await axios.post(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_KEY}`,
+      {
+        contents: [{
+          parts: [
+            { text: prompt },
+            { inline_data: { mime_type: 'image/jpeg', data: base64Image } }
+          ]
+        }],
+        generationConfig: { temperature: 0.1, maxOutputTokens: 300 },
+      }
+    );
+
+    const raw = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+    console.log('🤖 Gemini Vision resposta:', raw);
+
+    const jsonMatch = raw.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) throw new Error('JSON não encontrado');
+
+    const parsed = JSON.parse(jsonMatch[0]);
+    return {
+      title: parsed.titulo || 'Produto',
+      price: parseFloat(parsed.preco) || 0,
+      platform: parsed.plataforma || detectPlatform(link || ''),
+      rating: parseFloat(parsed.avaliacao) || 0,
+      sales_count: parseInt(parsed.vendas) || 0,
+      link: link || null,
+    };
+  } catch (err) {
+    console.error('❌ Gemini Vision erro:', err.message);
+    return { title: 'Produto', price: 0, platform: 'other', rating: 0, sales_count: 0, link };
+  }
+}
+
 // ========== GEMINI — extrai título e preço do texto OCR ==========
 async function parseWithGemini(ocrText, link) {
   try {
@@ -268,31 +316,22 @@ bot.on('photo', async (ctx) => {
     return;
   }
 
-  // ── MODO: OCR da print ──
-  console.log('\n📸 ===== PRINT RECEBIDA (OCR) =====');
+  // ── MODO: Gemini Vision analisa a print ──
+  console.log('\n📸 ===== PRINT RECEBIDA (Gemini Vision) =====');
 
-  if (!OCR_SPACE_KEY) {
-    return ctx.reply('❌ OCR não configurado. Use /p com o link na legenda.');
-  }
-
-  await ctx.reply('⏳ Lendo a print com OCR...');
+  await ctx.reply('🤖 Analisando a print com IA...');
 
   try {
     const photo = ctx.message.photo[ctx.message.photo.length - 1];
     const fileLink = await ctx.telegram.getFileLink(photo.file_id);
     const { data: imageBuffer } = await axios.get(fileLink.href, { responseType: 'arraybuffer' });
-
-    const ocrText = await extractTextFromImage(Buffer.from(imageBuffer));
-    if (!ocrText) {
-      return ctx.reply('❌ Não consegui ler texto na imagem. Tente usar /p com o link na legenda.');
-    }
+    const base64Image = Buffer.from(imageBuffer).toString('base64');
 
     const caption = ctx.message.caption || '';
     const captionLink = caption.match(/(https?:\/\/[^\s]+)/i)?.[1];
 
-    // Usa Gemini para extrair título e preço de forma inteligente
-    await ctx.reply('🤖 Analisando com IA...');
-    const parsed = await parseWithGemini(ocrText, captionLink);
+    // Gemini Vision analisa a imagem diretamente
+    const parsed = await analyzeImageWithGemini(base64Image, captionLink);
     const link = captionLink || parsed.link;
 
     if (!link) {
@@ -307,7 +346,7 @@ bot.on('photo', async (ctx) => {
     const categories = cats || [];
 
     // Salva na sessão para usar depois
-    session.pendingOcr = { parsed, link, ocrText };
+    session.pendingOcr = { parsed, link };
 
     const escapeHtml = t => t.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
     const catList = categories.map((c, i) => `${i + 1}. ${c.icon} ${c.name}`).join('\n');
@@ -316,6 +355,9 @@ bot.on('photo', async (ctx) => {
       `📝 <b>Dados extraídos:</b>\n` +
       `📦 Título: ${escapeHtml(parsed.title)}\n` +
       `💰 Preço: ${parsed.price > 0 ? `R$ ${parsed.price.toFixed(2)}` : 'Consultar'}\n` +
+      `🏪 Plataforma: ${parsed.platform || 'other'}\n` +
+      `⭐ Avaliação: ${parsed.rating > 0 ? parsed.rating : 'N/A'}\n` +
+      `🛒 Vendas: ${parsed.sales_count > 0 ? parsed.sales_count : 'N/A'}\n` +
       `🔗 Link: ${escapeHtml(link)}\n\n` +
       `📂 <b>Escolha a categoria (responda com o número):</b>\n${catList}`,
       { parse_mode: 'HTML' }
