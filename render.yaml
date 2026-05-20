@@ -27,5 +27,5 @@ services:
         sync: false
       - key: OCR_SPACE_KEY
         sync: false
-      - key: GEMINI_KEY
+      - key: OPENROUTER_KEY
         sync: false

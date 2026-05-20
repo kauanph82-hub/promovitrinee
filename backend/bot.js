@@ -4,19 +4,20 @@ const axios = require('axios');
 const cheerio = require('cheerio');
 const { v4: uuidv4 } = require('uuid');
 const supabase = require('./config/supabase');
+const { GoogleGenerativeAI } = require('@google/generative-ai');
 
 console.log('📦 Carregando bot.js...');
 
 const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
 const ADMIN_CHAT_ID = process.env.ADMIN_CHAT_ID;
-const GOOGLE_VISION_CREDENTIALS = process.env.GOOGLE_VISION_CREDENTIALS;
 const OCR_SPACE_KEY = process.env.OCR_SPACE_KEY || 'K84713721288957';
-const GEMINI_KEY = process.env.GEMINI_KEY || 'AIzaSyDJ5XXvt5hEGDaVP4aF_62p_gtAYPzhNY8';
+const OPENROUTER_KEY = process.env.OPENROUTER_KEY;
+const OPENROUTER_MODEL = 'nvidia/nemotron-nano-12b-v2-vl:free';
 
 console.log('🔑 Token do bot (últimos 3 chars):', BOT_TOKEN ? BOT_TOKEN.slice(-3) : '❌ NÃO ENCONTRADO');
 console.log('🔧 Admin ID:', ADMIN_CHAT_ID);
 console.log('👁️ OCR.space:', OCR_SPACE_KEY ? 'Configurado ✅' : '❌ NÃO CONFIGURADO');
-console.log('🤖 Gemini:', GEMINI_KEY ? 'Configurado ✅' : '❌ NÃO CONFIGURADO');
+console.log('🤖 OpenRouter:', OPENROUTER_KEY ? 'Configurado ✅' : '❌ NÃO CONFIGURADO');
 
 const bot = new Telegraf(BOT_TOKEN);
 
@@ -69,8 +70,12 @@ function calcOriginalPrice(promoPrice) {
   return Math.round(original * 100) / 100;
 }
 
-// ========== GEMINI VISION — analisa imagem diretamente ==========
+// ========== OPENROUTER VISION — analisa imagem diretamente ==========
 async function analyzeImageWithGemini(base64Image, link) {
+  if (!OPENROUTER_KEY) {
+    console.error('❌ OPENROUTER_KEY não configurada no .env');
+    return { title: 'Produto', price: 0, platform: detectPlatform(link || ''), rating: 0, sales_count: 0, link };
+  }
   try {
     const prompt = `Analise esta imagem de um produto de loja online brasileira e extraia:
 
@@ -84,23 +89,33 @@ Responda SOMENTE em JSON válido, sem explicações, sem markdown:
 {"titulo": "nome do produto", "preco": 32.49, "plataforma": "shopee", "avaliacao": 4.7, "vendas": 3000}`;
 
     const { data } = await axios.post(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_KEY}`,
+      'https://openrouter.ai/api/v1/chat/completions',
       {
-        contents: [{
-          parts: [
-            { text: prompt },
-            { inline_data: { mime_type: 'image/jpeg', data: base64Image } }
+        model: OPENROUTER_MODEL,
+        messages: [{
+          role: 'user',
+          content: [
+            { type: 'text', text: prompt },
+            { type: 'image_url', image_url: { url: `data:image/jpeg;base64,${base64Image}` } }
           ]
         }],
-        generationConfig: { temperature: 0.1, maxOutputTokens: 300 },
+        temperature: 0.1,
+        max_tokens: 300,
+      },
+      {
+        headers: {
+          'Authorization': `Bearer ${OPENROUTER_KEY}`,
+          'Content-Type': 'application/json',
+        },
+        timeout: 30000,
       }
     );
 
-    const raw = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
-    console.log('🤖 Gemini Vision resposta:', raw);
+    const raw = data.choices?.[0]?.message?.content || '';
+    console.log('🤖 OpenRouter Vision resposta:', raw);
 
     const jsonMatch = raw.match(/\{[\s\S]*\}/);
-    if (!jsonMatch) throw new Error('JSON não encontrado');
+    if (!jsonMatch) throw new Error('JSON não encontrado na resposta');
 
     const parsed = JSON.parse(jsonMatch[0]);
     return {
@@ -112,14 +127,18 @@ Responda SOMENTE em JSON válido, sem explicações, sem markdown:
       link: link || null,
     };
   } catch (err) {
-    console.error('❌ Gemini Vision erro:', err.message);
+    console.error('❌ OpenRouter Vision erro:', err.message);
     console.error('❌ Detalhes:', err.response?.data ? JSON.stringify(err.response.data).slice(0, 500) : 'sem detalhes');
-    return { title: 'Produto', price: 0, platform: 'other', rating: 0, sales_count: 0, link };
+    return { title: 'Produto', price: 0, platform: detectPlatform(link || ''), rating: 0, sales_count: 0, link };
   }
 }
 
-// ========== GEMINI — extrai título e preço do texto OCR ==========
+// ========== OPENROUTER — extrai título e preço do texto OCR ==========
 async function parseWithGemini(ocrText, link) {
+  if (!OPENROUTER_KEY) {
+    console.error('❌ OPENROUTER_KEY não configurada no .env');
+    return parseOcrText(ocrText, link);
+  }
   try {
     const prompt = `Você é um assistente especializado em extrair informações de prints de lojas online brasileiras (Shopee, TikTok Shop, Mercado Livre, Amazon, etc).
 
@@ -141,15 +160,24 @@ Responda SOMENTE em JSON válido, sem explicações, sem markdown:
 Se não encontrar algum campo, use o valor padrão (0 para números, "other" para plataforma, "Produto" para titulo).`;
 
     const { data } = await axios.post(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_KEY}`,
+      'https://openrouter.ai/api/v1/chat/completions',
       {
-        contents: [{ parts: [{ text: prompt }] }],
-        generationConfig: { temperature: 0.1, maxOutputTokens: 200 },
+        model: OPENROUTER_MODEL,
+        messages: [{ role: 'user', content: prompt }],
+        temperature: 0.1,
+        max_tokens: 200,
+      },
+      {
+        headers: {
+          'Authorization': `Bearer ${OPENROUTER_KEY}`,
+          'Content-Type': 'application/json',
+        },
+        timeout: 20000,
       }
     );
 
-    const raw = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
-    console.log('🤖 Gemini resposta:', raw);
+    const raw = data.choices?.[0]?.message?.content || '';
+    console.log('🤖 OpenRouter resposta:', raw);
 
     const jsonMatch = raw.match(/\{[\s\S]*\}/);
     if (!jsonMatch) throw new Error('JSON não encontrado');
@@ -164,7 +192,7 @@ Se não encontrar algum campo, use o valor padrão (0 para números, "other" par
       link: link || null,
     };
   } catch (err) {
-    console.error('❌ Gemini erro:', err.message);
+    console.error('❌ OpenRouter erro:', err.message);
     const fallback = parseOcrText(ocrText, link);
     return { ...fallback, platform: 'other', rating: 0, sales_count: 0 };
   }
