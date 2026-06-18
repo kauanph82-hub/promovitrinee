@@ -43,6 +43,9 @@ async function extractTextFromImage(imageBuffer) {
   form.append('apikey', OCR_SPACE_KEY);
   form.append('language', 'por');
   form.append('isOverlayRequired', 'false');
+  form.append('OCREngine', '2');         // Engine 2 é melhor para prints de celular
+  form.append('scale', 'true');          // Escala a imagem para melhor leitura
+  form.append('isTable', 'false');
   form.append('file', imageBuffer, { filename: 'image.jpg', contentType: 'image/jpeg' });
 
   const { data } = await axios.post('https://api.ocr.space/parse/image', form, {
@@ -139,24 +142,22 @@ async function parseWithGemini(ocrText, link) {
     return parseOcrText(ocrText, link);
   }
   try {
-    const prompt = `Você é um assistente especializado em extrair informações de prints de lojas online brasileiras (Shopee, TikTok Shop, Mercado Livre, Amazon, etc).
+    const prompt = `Você extrai dados de produtos de prints de lojas online brasileiras (Shopee, Mercado Livre, Amazon, etc).
 
-Texto extraído por OCR de uma print de produto:
+Texto extraído por OCR:
 """
 ${ocrText.slice(0, 2000)}
 """
 
-Extraia as seguintes informações:
-1. titulo: O nome/título real do produto (não nome da loja, não texto de busca, não botões como "Comprar", "Adicionar ao carrinho")
-2. preco: O preço promocional atual em reais (número decimal, ex: 32.49). Não o preço parcelado, não o preço original riscado.
-3. plataforma: A loja/plataforma (shopee, mercadolivre, amazon, aliexpress, shein, magalu, americanas, tiktok, ou other)
-4. avaliacao: A nota de avaliação do produto (número de 0 a 5, ex: 4.7). Se não encontrar, use 0.
-5. vendas: Quantidade de vendas/vendidos (número inteiro, ex: 3000). Se não encontrar, use 0.
+Regras importantes:
+- titulo: nome REAL do produto. Pode estar fragmentado no OCR — junte as partes que fazem sentido. Ex: "Iphone 14 Pro Max 128GB" ou "Xiaomi TV Stick 4K". NUNCA retorne "Produto".
+- preco: valor numérico do preço principal em reais. Procure padrões como "R$2.402,88", "2402.88", "R$ 454,00". NUNCA retorne 0 se houver qualquer número parecido com preço.
+- avaliacao: nota de 0 a 5. Use 0 se não encontrar.
+- vendas: quantidade vendida. Procure "vendido(s)", "vendas". Use 0 se não encontrar.
 
-Responda SOMENTE em JSON válido, sem explicações, sem markdown:
-{"titulo": "nome do produto", "preco": 32.49, "plataforma": "shopee", "avaliacao": 4.7, "vendas": 3000}
+Responda SOMENTE em JSON válido:
+{"titulo": "nome do produto", "preco": 32.49, "avaliacao": 4.7, "vendas": 3000}`;
 
-Se não encontrar algum campo, use o valor padrão (0 para números, "other" para plataforma, "Produto" para titulo).`;
 
     const { data } = await axios.post(
       'https://openrouter.ai/api/v1/chat/completions',
@@ -416,14 +417,23 @@ bot.on('photo', async (ctx) => {
       );
     }
 
-    // IA de texto analisa o OCR (rápido e preciso)
+    // IA de texto analisa o OCR
     let parsed;
     if (ocrText.length > 20) {
       parsed = await parseWithGemini(ocrText, link);
-    } else {
-      // Fallback: visão direta se OCR falhou
+    }
+
+    // Se OCR falhou ou retornou dados genéricos, usa visão direta como fallback
+    if (!parsed || parsed.title === 'Produto' || parsed.price === 0) {
+      console.log('⚠️ OCR insuficiente, usando visão direta...');
       const base64Image = Buffer.from(imageBuffer).toString('base64');
-      parsed = await analyzeImageWithGemini(base64Image, link);
+      const visionParsed = await analyzeImageWithGemini(base64Image, link);
+      // Usa visão se trouxe dados melhores
+      if (visionParsed.title !== 'Produto' || visionParsed.price > 0) {
+        parsed = visionParsed;
+      } else if (!parsed) {
+        parsed = visionParsed;
+      }
     }
 
     // Busca categorias do banco
